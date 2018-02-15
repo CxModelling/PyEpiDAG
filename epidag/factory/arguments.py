@@ -8,7 +8,7 @@ __author__ = 'TimeWz667'
 __all__ = ['ValidationError',
            'Float', 'PositiveFloat', 'NegativeFloat', 'Prob',
            'Integer', 'PositiveInteger', 'NegativeInteger',
-           'String', 'RegExp', 'Path', 'List',
+           'String', 'RegExp', 'Path', 'List', 'ProbTab',
            'Options', 'NotNull']
 
 
@@ -18,15 +18,22 @@ __all__ = ['ValidationError',
 class ValidationError(ValueError):
     def __init__(self, message='', *args):
         """
-        Error message during validation
-        Args:
-            message:
+        Error message when validation fails
+        :param message:
+        :param args:
         """
         ValueError.__init__(self, message, *args)
 
 
 class Argument(metaclass=ABCMeta):
     def __init__(self, name, tp, des, opt):
+        """
+        Abstract object of all arguments
+        :param name: name
+        :param tp: data type
+        :param des: description
+        :param opt: optional or not
+        """
         self.Name = name
         self.Description = des if des else name
         self.Type = tp
@@ -37,7 +44,7 @@ class Argument(metaclass=ABCMeta):
 
     def to_form(self, resource=None):
         """
-        fetch the form of the argument
+        Render the form of the argument
         :param resource:
         :return:
         """
@@ -51,7 +58,7 @@ class Argument(metaclass=ABCMeta):
     @abstractmethod
     def check(self, value, resource=None):
         """
-        check if the value is legal or not
+        Check if the value is legal or not
         :param value: input value
         :param resource:
         :return: true if the value is legal
@@ -60,7 +67,7 @@ class Argument(metaclass=ABCMeta):
 
     def correct(self, value, resource=None):
         """
-        fetch legal value as possible
+        Render legal value as possible
         :param value: input value
         :param resource:
         :return: decorated value

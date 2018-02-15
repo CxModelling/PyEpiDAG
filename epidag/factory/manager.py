@@ -1,8 +1,8 @@
-from .util import parse_function
-from .arguments import ValidationError
+from epidag.factory.util import parse_function
+from epidag.factory.arguments import ValidationError
 
 __author__ = 'TimeWz667'
-__all__ = ['getWorkshop']
+__all__ = ['get_workshop']
 
 
 class Creator:
@@ -140,7 +140,7 @@ class Workshop:
                 logger.debug('Object creation failed')
             return
 
-    def from_json(self, js, logger=None):
+    def from_json(self, js):
         name = js['Name']
         args = js['Args']
         res = self.Creators[js['Type']].create(name, args)
@@ -167,11 +167,18 @@ class Workshop:
     def list(self):
         return list(self.Creators.keys())
 
+    def __str__(self):
+        products = list(self.Creators.keys())
+        if products:
+            return 'The workshop of ' + ', '.join(products)
+        else:
+            return 'A new workshop'
+
 
 WorkshopDict = dict()
 
 
-def getWorkshop(name):
+def get_workshop(name):
     if not isinstance(name, str):
         raise NameError('A workshop name must be string')
     # todo locker
@@ -186,7 +193,7 @@ def getWorkshop(name):
 
 if __name__ == '__main__':
     from collections import namedtuple
-    from factory.arguments import Options, PositiveInteger, Prob
+    from epidag.factory.arguments import Options, PositiveInteger, Prob
 
     Ac = namedtuple('A', ('Name', 'n', 'p'))
     Bc = namedtuple('B', ('Name', 'vs'))
