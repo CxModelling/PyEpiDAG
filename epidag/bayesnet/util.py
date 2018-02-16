@@ -1,8 +1,17 @@
 import numpy as np
 from numpy.random import uniform
 from scipy.misc import logsumexp
-import re
 
+__author__ = 'TimeWz667'
+__all__ = ['ScriptException', 'Sampler', 'resample']
+
+
+class ScriptException(Exception):
+    def __init__(self, err):
+        self.Err = err
+
+    def __repr__(self):
+        return self.Err
 
 class Sampler(object):
     """
@@ -62,5 +71,3 @@ if __name__ == '__main__':
     sam1 = Sampler([1, 0, 1])
     ct1 = Counter(sam1(10000))
     print(ct1)
-
-    # print(resample(["A", "B", 3], ["A", "B", 3], [0, 0, -1]))

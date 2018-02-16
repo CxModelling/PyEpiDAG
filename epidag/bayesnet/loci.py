@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 import re
-from epidag.distribution import parse_distribution
+from epidag.bayesnet import parse_distribution
 
 __author__ = 'TimeWz667'
 

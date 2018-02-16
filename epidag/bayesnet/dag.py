@@ -1,19 +1,10 @@
-from epidag.loci import *
-from epidag import Gene, BayesianModel, SimulationModel
+from epidag.bayesnet import Gene, BayesianModel, SimulationModel
 from collections import OrderedDict
 import json
 import re
 from functools import reduce
 
 __author__ = 'TimeWz667'
-
-
-class ScriptException(Exception):
-    def __init__(self, err):
-        self.Err = err
-
-    def __repr__(self):
-        return self.Err
 
 
 def script_to_json(script):

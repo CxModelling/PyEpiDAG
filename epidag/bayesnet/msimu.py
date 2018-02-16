@@ -1,4 +1,4 @@
-from epidag import Gene
+from epidag.bayesnet import Gene
 import pandas as pd
 import numpy as np
 import numpy.random as rd

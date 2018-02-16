@@ -3,7 +3,7 @@ from scipy.interpolate import interp1d
 import numpy as np
 import numpy.random as rd
 from abc import ABCMeta, abstractmethod
-from factory import getWorkshop
+from epidag.factory import get_workshop
 import factory.arguments as vld
 
 
@@ -222,7 +222,7 @@ class EmpiricalRV(AbsDistribution):
         return np.mean(self.X*self.X*self.Fn(self.X))
 
 
-DistributionCentre = getWorkshop('Distributions')
+DistributionCentre = get_workshop('Distributions')
 
 DistributionCentre.register('k', Const, [vld.Float('k')])
 
