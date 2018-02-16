@@ -16,10 +16,10 @@ manager.register('C', Bc, [fac.Options('vs', 'ZX')])
 manager.register('D', Bc, [fac.Options('vs', {'Z': 1, 'X': 2})])
 manager.append_resource('ZX', {'Z': 1, 'X': 2})
 
-print('After appending creators\n')
+print('After appending creators')
 print(manager)
 
-print('Create objects from json forms')
+print('\nCreate objects from json forms')
 print('Test A')
 # print(manager.get_form('A'))
 print(manager.create({'Name': 'A1', 'Type': 'A', 'Args': {'p': 0.2, 'n': 5}}))
