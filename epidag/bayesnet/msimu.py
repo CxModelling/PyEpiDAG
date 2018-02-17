@@ -1,7 +1,10 @@
-from epidag.bayesnet import Gene
+import epidag as dag
 import pandas as pd
 import numpy as np
 import numpy.random as rd
+
+
+__all__ = ['sample', 'sample_minimally']
 
 
 def sample(bn, cond=None):
@@ -18,10 +21,40 @@ def sample(bn, cond=None):
     return res
 
 
-sample(bn, {'sd': 1})
+def sample_minimally(bn, included, cond, sources=False):
+    """
+    sample variables which are minimal requirements of having included
+    :param bn: a Bayesian Network
+    :param included: iterable, targeted output variables
+    :param cond: dict, given variables
+    :param sources: True if mediators needed
+    :return:
+    """
+    g = bn.DAG
 
+    cond = cond if cond else dict()
+    given = list(cond.keys())
 
+    suf = dag.get_sufficient_nodes(g, included, given)
+    suf_exo = [nod for nod in bn.ExogenousNodes if nod in suf]
 
+    for nod in suf_exo:
+        if nod not in cond:
+            raise ValueError('Exogenous node {} does not found'.format(nod))
+
+    res = dict(cond)
+
+    for nod in bn.OrderedNodes:
+        if nod in suf and nod not in res:
+            res[nod] = g.nodes[nod]['loci'].sample(res)
+    sinks = {k: v for k, v in res.items() if k in included}
+    if sources:
+        med = {k: v for k, v in res.items() if k not in included}
+        return sinks, med
+    else:
+        return sinks
+
+'''
 class ParameterCore(Gene):
     def __init__(self, ds, vs):
         Gene.__init__(self, vs)
@@ -139,7 +172,7 @@ class SimulationModel:
 
     def to_json(self):
         return self.DAG.to_json()
-
+'''
 
 if __name__ == '__main__':
     pars1 = """

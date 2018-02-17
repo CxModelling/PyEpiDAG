@@ -81,19 +81,7 @@ class BayesianNetwork:
         self.ExogenousNodes = [k for k, v in self.DAG.nodes.data() if v['Type'] is 'ExoValue']
         self.RootNodes = [k for k, v in self.DAG.in_degree() if v == 0]
         self.LeafNodes = [k for k, v in self.DAG.out_degree() if v == 0]
-        self.OrderedNodes = self.__find_order()
-
-    def __find_order(self):
-        ordered = list()
-        to_test = set(self.DAG.nodes())
-        tested = set(ordered)
-        while to_test:
-            for nod in to_test:
-                if nx.ancestors(self.DAG, nod) <= tested:
-                    ordered.append(nod)
-            tested = set(ordered)
-            to_test = to_test - tested
-        return ordered
+        self.OrderedNodes = list(nx.topological_sort(self.DAG))
 
     def to_json(self):
         return self.Source
@@ -125,9 +113,7 @@ if __name__ == '__main__':
 
     dag1 = BayesianNetwork(js1)
 
-
     print('\nTo JSON, FROM JSON')
-
     print(dag1)
 
     #print(dag1.get_offsprings('y'))
