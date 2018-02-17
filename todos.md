@@ -1,0 +1,4 @@
+- parse function
+- sample from dag
+- grouped nodes
+- Bayesian models
