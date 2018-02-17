@@ -4,7 +4,8 @@ import numpy as np
 import numpy.random as rd
 from abc import ABCMeta, abstractmethod
 from epidag.factory import get_workshop
-import factory.arguments as vld
+import epidag.factory.arguments as vld
+from epidag.bayesnet import MATH_FUNC
 
 
 __author__ = 'TimeWz667'
@@ -312,8 +313,8 @@ DistributionCentre.register('binom', d_binom, [vld.PositiveInteger('size', defau
 DistributionCentre.register('cat', CategoricalRV, [vld.ProbTab('kv')])
 
 
-def parse_distribution(name, di=None):
-    return DistributionCentre.parse(name, di)
+def parse_distribution(name, di=None, glo=None, loc=None):
+    return DistributionCentre.parse(name, di, env=glo, loc=loc)
 
 
 if __name__ == '__main__':
@@ -332,7 +333,7 @@ if __name__ == '__main__':
         print(di.to_json())
         print(di.mean())
 
-    dist_cat = parse_distribution('cat({"M": 3411,"O": 3502,"Y": 52})')
+    dist_cat = parse_distribution('cat({"M": 3411,"O": kk,"Y": 52})', loc={'kk': 3500})
     from collections import Counter
     print(dist_cat.to_json())
     print(Counter(dist_cat.sample(10000)))

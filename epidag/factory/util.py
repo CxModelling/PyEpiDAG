@@ -3,7 +3,8 @@ import re
 __author__ = 'TimeWz667'
 
 
-def parse_function(fn, env=None):
+def parse_function(fn, env=None, loc=None):
+    # todo check
     fn = fn.replace(' ', '')
     mat = re.match(r'(\w+)\((\S+)\)', fn)
     if mat is None:
@@ -31,7 +32,7 @@ def parse_function(fn, env=None):
             mat = re.match(pat, pars)
             if mat:
                 try:
-                    value = eval(mat.group(0), env)
+                    value = eval(mat.group(0), env, loc)
                 except NameError:
                     raise ValueError
                 pars = re.sub(pat, '', pars, 1)

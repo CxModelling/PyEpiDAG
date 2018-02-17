@@ -1,8 +1,23 @@
 from abc import ABCMeta, abstractmethod
 import re
-from epidag.bayesnet import parse_distribution
+from epidag.bayesnet import parse_distribution, MATH_FUNC
+import ast
 
 __author__ = 'TimeWz667'
+__all__ = ['ValueLoci', 'ExoValueLoci', 'DistributionLoci', 'FunctionLoci',
+           'parse_parents']
+
+
+def parse_parents(seq):
+    sen = ast.parse(seq)
+    v, f = set(), set()
+
+    for s in ast.walk(sen):
+        if isinstance(s, ast.Name):
+            v.add(s.id)
+        elif isinstance(s, ast.Call):
+            f.add(s.func.id)
+    return v - f, f
 
 
 class Loci(metaclass=ABCMeta):
@@ -31,7 +46,7 @@ class Loci(metaclass=ABCMeta):
 class ValueLoci(Loci):
     def __init__(self, name, val):
         self.Name = name
-        self.Value = eval(val) if isinstance(val, str) else val
+        self.Value = eval(val, MATH_FUNC) if isinstance(val, str) else val
 
     @property
     def Parents(self):
@@ -55,21 +70,47 @@ class ValueLoci(Loci):
     __str__ = __repr__
 
 
+class ExoValueLoci(Loci):
+    def __init__(self, name):
+        self.Name = name
+
+    @property
+    def Parents(self):
+        return set()
+
+    def sample(self, pas=None):
+        return pas[self.Name]
+
+    def evaluate(self, pas=None):
+        return 0
+
+    def fill(self, gene):
+        gene[self.Name] = self.sample(gene.Locus)
+
+    def to_json(self):
+        return {'Type': 'ExoValue'}
+
+    def __repr__(self):
+        return self.Name
+
+    __str__ = __repr__
+
+
 class DistributionLoci(Loci):
     def __init__(self, name, val, pas=None):
         self.Name = name
         self.Func = val
-        self.Parent = pas if pas else DistributionLoci.get_parents(self.Func)
+        if pas:
+            self.Parent = pas
+        else:
+            self.Parent, _ = parse_parents(val)
 
     @property
     def Parents(self):
         return self.Parent
 
     def get_distribution(self, pas):
-        fun = self.Func
-        for p in self.Parent:
-            fun = re.sub(r'\b{}\b'.format(p), str(pas[p]), fun)
-        return parse_distribution(fun)
+        return parse_distribution(self.Func, glo=MATH_FUNC, loc=pas)
 
     def sample(self, pas=None):
         return self.get_distribution(pas).sample()
@@ -88,43 +129,22 @@ class DistributionLoci(Loci):
 
     __str__ = __repr__
 
-    @staticmethod
-    def get_parents(expr):
-        di = re.sub(r'\s*', '', expr)
-        di = di.split('(', 1)[1][:-1]
-        di = di.split(',')
-        pa = list()
-        for d in di:
-            va = None
-            while not va:
-                try:
-                    va = eval(d)
-                except NameError as e:
-                    los = re.match(r"name '(\w+)'", e.args[0])
-                    los = los.group(1)
-                    exec('{} = 0.87'.format(los))
-                    if los not in pa:
-                        pa.append(los)
-                except SyntaxError as e:
-                    raise e
-        return pa
-
 
 class FunctionLoci(Loci):
     def __init__(self, name, val, pas=None):
         self.Name = name
         self.Func = val
-        self.Parent = pas if pas else FunctionLoci.get_parents(self.Func)
+        if pas:
+            self.Parent = pas
+        else:
+            self.Parent, _ = parse_parents(val)
 
     @property
     def Parents(self):
         return self.Parent
 
     def sample(self, pas=None):
-        fun = self.Func
-        for p in self.Parent:
-            fun = re.sub(r'\b{}\b'.format(p), str(pas[p]), fun)
-        return eval(fun)
+        return eval(self.Func, MATH_FUNC, pas)
 
     def evaluate(self, pas=None):
         return 0
@@ -140,31 +160,15 @@ class FunctionLoci(Loci):
 
     __str__ = __repr__
 
-    @staticmethod
-    def get_parents(expr):
-        va = None
-        pa = list()
-        while not va:
-            try:
-                va = eval(expr)
-            except NameError as e:
-                los = re.match(r"name '(\w+)'", e.args[0])
-                los = los.group(1)
-                exec('{} = 0.87'.format(los))
-                pa.append(los)
-            except SyntaxError as e:
-                raise e
-        return pa
-
 
 if __name__ == '__main__':
-    d1 = '1/0.01 + k / u'
+    d1 = '1/0.01 + exp(k) + u'
     d1 = FunctionLoci('ss', d1)
     print(d1.Parents)
-    print(d1.sample({'k': 50, 'u': 5}))
+    print(d1.sample({'k': 2, 'u': 5}))
     print(d1.to_json())
 
-    d2 = 'gamma(1/0.01, ss)'
+    d2 = 'gamma(cos(1/0.01), ss)'
     d2 = DistributionLoci('sss', d2)
     print(d2.Parents)
     print(d2.sample({'ss': 10, 'u': 5}))

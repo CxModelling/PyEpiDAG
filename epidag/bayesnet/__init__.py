@@ -5,5 +5,5 @@ from .gene import *
 # from .mbayes import *
 # from .msimu import *
 # from .mcausal import *
-# from .dag import *
+from .dag import *
 
