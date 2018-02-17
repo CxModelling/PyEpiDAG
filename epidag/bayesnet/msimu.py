@@ -4,6 +4,24 @@ import numpy as np
 import numpy.random as rd
 
 
+def sample(bn, cond=None):
+    g = bn.DAG
+    cond = cond if cond else dict()
+    if any(nod not in cond for nod in bn.ExogenousNodes):
+        raise ValueError('Exogenous nodes do not fully defined')
+
+    res = dict(cond)
+
+    for nod in bn.OrderedNodes:
+        if nod not in res:
+            res[nod] = g.nodes[nod]['loci'].sample(res)
+    return res
+
+
+sample(bn, {'sd': 1})
+
+
+
 class ParameterCore(Gene):
     def __init__(self, ds, vs):
         Gene.__init__(self, vs)
