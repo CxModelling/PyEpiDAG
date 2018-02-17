@@ -1,5 +1,4 @@
 import epidag as dag
-import json
 import re
 import networkx as nx
 
