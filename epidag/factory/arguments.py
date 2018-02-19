@@ -106,9 +106,9 @@ class Float(Argument):
         except TypeError:
             raise ValidationError('Missing value')
 
-        if self.Lower >= value:
+        if self.Lower > value:
             raise ValidationError('The value is below lower bond')
-        elif self.Upper <= value:
+        elif self.Upper < value:
             raise ValidationError('The value is beyond upper bond')
         return value
 

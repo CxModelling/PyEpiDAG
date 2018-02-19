@@ -36,7 +36,7 @@ class AbsDistribution(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def sample(self, n=1):
+    def sample(self, n=1, **kwargs):
         pass
 
     @abstractmethod
@@ -65,7 +65,7 @@ class SpDouble(AbsDistribution):
         AbsDistribution.__init__(self, name)
         self.Dist = dist
 
-    def sample(self, n=1):
+    def sample(self, n=1, **kwargs):
         if n is 1:
             return self.Dist.rvs()
         return self.Dist.rvs(n)
@@ -96,7 +96,7 @@ class SpInteger(AbsDistribution):
         AbsDistribution.__init__(self, name)
         self.Dist = dist
 
-    def sample(self, n=1):
+    def sample(self, n=1, **kwargs):
         if n is 1:
             return round(self.Dist.rvs())
         return np.round(self.Dist.rvs(n))
@@ -140,7 +140,7 @@ class Const(AbsDistribution):
     def Type(self):
         return type(self.K)
 
-    def sample(self, n=1):
+    def sample(self, n=1, **kwargs):
         if n > 1:
             return np.array([self.K] * n)
         return self.K
@@ -182,7 +182,7 @@ class CategoricalRV(AbsDistribution):
     def logpdf(self, v):
         return np.array([x*np.log(self.kv[k]) for k, x in v.items()]).sum()
 
-    def sample(self, n=1):
+    def sample(self, n=1, **kwargs):
         return rd.choice(self.cat, n, p=self.p)
 
     def mean(self):
@@ -213,7 +213,7 @@ class EmpiricalRV(AbsDistribution):
     def logpdf(self, v):
         return self.Logpdf(v)
 
-    def sample(self, n=1):
+    def sample(self, n=1, **kwargs):
         return self.Fn(rd.random(n))
 
     def mean(self):
@@ -247,7 +247,7 @@ def d_lnorm(name, meanlog, sdlog):
     return SpDouble(name, sts.lognorm(s=meanlog, scale=np.exp(sdlog)))
 
 
-DistributionCentre.register('lnorm', d_lnorm, [vld.Float('meanlog', default=0),
+DistributionCentre.register('lnorm', d_lnorm, [vld.PositiveFloat('meanlog', default=0),
                                                vld.PositiveFloat('sdlog', default=1.0)])
 
 
@@ -286,7 +286,7 @@ def d_norm(name, mean, sd):
     return SpDouble(name, sts.norm(loc=mean, scale=sd))
 
 
-DistributionCentre.register('norm', d_norm, [vld.PositiveFloat('mean', default=0),
+DistributionCentre.register('norm', d_norm, [vld.Float('mean', default=0),
                                              vld.PositiveFloat('sd', default=1.0)])
 
 

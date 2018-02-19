@@ -79,9 +79,15 @@ class BayesianNetwork:
 
         nx.freeze(self.DAG)
         self.ExogenousNodes = [k for k, v in self.DAG.nodes.data() if v['Type'] is 'ExoValue']
-        self.RootNodes = [k for k, v in self.DAG.in_degree() if v == 0]
-        self.LeafNodes = [k for k, v in self.DAG.out_degree() if v == 0]
+        self.RootNodes = [k for k, v in self.DAG.pred.items() if len(v) is 0]
+        self.LeafNodes = [k for k, v in self.DAG.succ.items() if len(v) is 0]
         self.OrderedNodes = list(nx.topological_sort(self.DAG))
+
+    def __getitem__(self, item):
+        return self.DAG.nodes[item]['loci']
+
+    def copy(self):
+        return BayesianNetwork(self.Source)
 
     def to_json(self):
         return self.Source

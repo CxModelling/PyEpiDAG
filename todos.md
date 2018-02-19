@@ -1,4 +1,3 @@
-- parse function
-- sample from dag
+- parse functionj
 - grouped nodes
 - Bayesian models

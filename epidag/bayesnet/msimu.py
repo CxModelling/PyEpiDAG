@@ -1,10 +1,8 @@
 import epidag as dag
-import pandas as pd
-import numpy as np
-import numpy.random as rd
+import networkx as nx
 
 
-__all__ = ['sample', 'sample_minimally']
+__all__ = ['sample', 'sample_minimally', 'form_hierarchy']
 
 
 def sample(bn, cond=None):
@@ -53,6 +51,127 @@ def sample_minimally(bn, included, cond, sources=False):
         return sinks, med
     else:
         return sinks
+
+
+class NodeGroup:
+    def __init__(self, fixed):
+        self.Children = set()
+        self.Nodes = set(fixed)
+        self.Parents = set()
+
+    def append_chd(self, chd):
+        self.Children.add(chd)
+
+    def needs(self, nod, g):
+        if any(nod in nx.ancestors(g, x) for x in self.Nodes):
+            return True
+        elif any(chd.needs(nod, g) for chd in self.Children):
+            return True
+        else:
+            return False
+
+    def can_be_passed_down(self, nod, g):
+        des = nx.descendants(g, nod)
+        if any(x in des for x in self.Nodes):
+            return False
+        else:
+            return True
+
+    def catch(self, nod):
+        self.Nodes.add(nod)
+
+    def pop(self, nod):
+        self.Nodes.remove(nod)
+
+    def pass_down(self, nod, g):
+        if not self.can_be_passed_down(nod, g):
+            return
+
+        needed = [chd for chd in self.Children if chd.needs(nod, g)]
+        if len(needed) is 1:
+            self.Nodes.remove(nod)
+            needed[0].catch(nod)
+            needed[0].pass_down(nod, g)
+
+    def has(self, nod):
+        if nod in self.Nodes:
+            return True
+        if any(chd.has(nod) for chd in self.Children):
+            return True
+        else:
+            return False
+
+    def can_be_raised_up(self, nod, g):
+        anc = nx.ancestors(g, nod)
+        if any(x in anc for x in self.Nodes):
+            return False
+        else:
+            return True
+
+    def raise_up(self, nod, g):
+        for chd in self.Children:
+            if not chd.has(nod):
+                continue
+            if chd.can_be_raised_up(nod, g):
+                chd.raise_up(nod, g)
+                chd.Nodes.remove(nod)
+                self.catch(nod)
+                return
+
+    def get_all(self):
+        return set.union(self.Nodes, *[chd.get_all() for chd in self.Children])
+
+    def print(self, i=0):
+        print('--' * i + '(' + ', '.join(self.Nodes) + ')')
+        for chd in self.Children:
+            chd.print(i + 1)
+
+
+def form_hierarchy(bn, hie=None, condense=True):
+    g = bn.DAG
+
+    # todo tree form
+    # check order
+
+    if not hie:
+        root = NodeGroup(bn.OrderedNodes)
+
+    if isinstance(hie, list):
+        root = NodeGroup(hie[0])
+        ng1 = root
+        for hi in hie[1:]:
+            ng0, ng1 = ng1, NodeGroup(hi)
+            ng0.append_chd(ng1)
+
+    else:
+        root = NodeGroup(bn.OrderedNodes)
+    # elif isinstance(hie, dict):
+    #    # todo
+    #    pass
+
+    all_fixed = root.get_all()
+    all_floated = [nod for nod in bn.OrderedNodes if nod not in all_fixed]
+
+    all_floated.reverse()
+
+    for nod in bn.ExogenousNodes:
+        root.catch(nod)
+
+    all_floated = [nod for nod in all_floated if nod not in bn.ExogenousNodes]
+    for nod in all_floated:
+        root.catch(nod)
+        root.pass_down(nod, g)
+
+    if not condense:
+        return root
+
+    all_floated.reverse()
+
+    for nod in all_floated:
+        root.raise_up(nod, g)
+
+    return root
+
 
 '''
 class ParameterCore(Gene):
