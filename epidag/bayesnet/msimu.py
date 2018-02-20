@@ -53,8 +53,11 @@ def sample_minimally(bn, included, cond, sources=False):
         return sinks
 
 
+
+
 class NodeGroup:
-    def __init__(self, fixed):
+    def __init__(self, name, fixed):
+        self.Name = name
         self.Children = set()
         self.Nodes = set(fixed)
         self.Parents = set()
@@ -64,6 +67,8 @@ class NodeGroup:
 
     def needs(self, nod, g):
         if any(nod in nx.ancestors(g, x) for x in self.Nodes):
+            return True
+        elif any(nod in nx.descendants(g, x) for x in self.Nodes):
             return True
         elif any(chd.needs(nod, g) for chd in self.Children):
             return True
@@ -84,13 +89,13 @@ class NodeGroup:
         self.Nodes.remove(nod)
 
     def pass_down(self, nod, g):
+        self.catch(nod)
         if not self.can_be_passed_down(nod, g):
             return
 
         needed = [chd for chd in self.Children if chd.needs(nod, g)]
         if len(needed) is 1:
-            self.Nodes.remove(nod)
-            needed[0].catch(nod)
+            self.pop(nod)
             needed[0].pass_down(nod, g)
 
     def has(self, nod):
@@ -114,7 +119,7 @@ class NodeGroup:
                 continue
             if chd.can_be_raised_up(nod, g):
                 chd.raise_up(nod, g)
-                chd.Nodes.remove(nod)
+                chd.pop(nod)
                 self.catch(nod)
                 return
 
@@ -130,24 +135,36 @@ class NodeGroup:
 def form_hierarchy(bn, hie=None, condense=True):
     g = bn.DAG
 
-    # todo tree form
+    def divide(xs, key):
+        tr, fa = list(), list()
+        for x in xs:
+            if key(x):
+                tr.append(x)
+            else:
+                fa.append(x)
+        return tr, fa
+
+    def define_node(k, links):
+        chd, node = divide(links[k], lambda x: x in links)
+        curr = NodeGroup(k, node)
+        for ch in chd:
+            curr.append_chd(define_node(ch, links))
+        return curr
+
     # check order
+    if isinstance(hie, dict):
+        root = define_node('root', hie)
 
-    if not hie:
-        root = NodeGroup(bn.OrderedNodes)
-
-    if isinstance(hie, list):
-        root = NodeGroup(hie[0])
+    elif isinstance(hie, list):
+        root = NodeGroup('root', hie[0])
         ng1 = root
-        for hi in hie[1:]:
-            ng0, ng1 = ng1, NodeGroup(hi)
+        for i, hi in enumerate(hie[1:], 2):
+            ng0, ng1 = ng1, NodeGroup('Layer {}'.format(i), hi)
             ng0.append_chd(ng1)
-
     else:
-        root = NodeGroup(bn.OrderedNodes)
-    # elif isinstance(hie, dict):
-    #    # todo
-    #    pass
+        root = NodeGroup('root', bn.OrderedNodes)
+
+    root.print()
 
     all_fixed = root.get_all()
     all_floated = [nod for nod in bn.OrderedNodes if nod not in all_fixed]

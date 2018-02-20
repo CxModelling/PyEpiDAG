@@ -5,8 +5,6 @@ import numpy.random as rd
 from abc import ABCMeta, abstractmethod
 from epidag.factory import get_workshop
 import epidag.factory.arguments as vld
-from epidag.bayesnet import MATH_FUNC
-
 
 __author__ = 'TimeWz667'
 __all__ = ['AbsDistribution', 'SpDouble', 'SpInteger', 'DistributionCentre', 'parse_distribution']
@@ -183,7 +181,11 @@ class CategoricalRV(AbsDistribution):
         return np.array([x*np.log(self.kv[k]) for k, x in v.items()]).sum()
 
     def sample(self, n=1, **kwargs):
-        return rd.choice(self.cat, n, p=self.p)
+        sam = rd.choice(self.cat, n, p=self.p)
+        if n == 1:
+            return sam[0]
+        else:
+            return sam
 
     def mean(self):
         return 0
@@ -251,12 +253,12 @@ DistributionCentre.register('lnorm', d_lnorm, [vld.PositiveFloat('meanlog', defa
                                                vld.PositiveFloat('sdlog', default=1.0)])
 
 
-def d_unif(name, min, max):
-    return SpDouble(name, sts.uniform(min, max-min))
+def d_unif(name, mi, ma):
+    return SpDouble(name, sts.uniform(mi, ma-mi))
 
 
-DistributionCentre.register('unif', d_unif, [vld.Float('min', default=0),
-                                             vld.Float('max', default=1.0)])
+DistributionCentre.register('unif', d_unif, [vld.Float('mi', default=0),
+                                             vld.Float('ma', default=1.0)])
 
 
 def d_chi2(name, df):
