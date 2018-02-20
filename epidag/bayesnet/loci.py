@@ -1,5 +1,4 @@
 from abc import ABCMeta, abstractmethod
-import re
 from epidag.bayesnet import parse_distribution, MATH_FUNC
 import ast
 

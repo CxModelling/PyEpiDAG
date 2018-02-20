@@ -1,8 +1,11 @@
 import epidag as dag
+from abc import ABCMeta, abstractmethod
 import networkx as nx
 
 
-__all__ = ['sample', 'sample_minimally', 'form_hierarchy']
+__all__ = ['sample', 'sample_minimally', 'form_hierarchy',
+           'analyse_node_type', 'to_simulation_core',
+           'CompoundActor', 'SingleActor', 'FrozenSingleActor']
 
 
 def sample(bn, cond=None):
@@ -53,14 +56,11 @@ def sample_minimally(bn, included, cond, sources=False):
         return sinks
 
 
-
-
 class NodeGroup:
     def __init__(self, name, fixed):
         self.Name = name
         self.Children = set()
         self.Nodes = set(fixed)
-        self.Parents = set()
 
     def append_chd(self, chd):
         self.Children.add(chd)
@@ -127,12 +127,19 @@ class NodeGroup:
         return set.union(self.Nodes, *[chd.get_all() for chd in self.Children])
 
     def print(self, i=0):
-        print('--' * i + '(' + ', '.join(self.Nodes) + ')')
+        print('{}{}{}({})'.format('--'*i, ' ' if i else '', self.Name, ', '.join(self.Nodes)))
         for chd in self.Children:
             chd.print(i + 1)
 
 
 def form_hierarchy(bn, hie=None, condense=True):
+    """
+
+    :param bn: epidag.BayesNet, a Bayesian Network
+    :param hie: hierarical structure of the nodes of bn
+    :param condense: True if attempting to hoist nodes to high hierarchy as possible
+    :return: A tree structure with NodeGroup
+    """
     g = bn.DAG
 
     def divide(xs, key):
@@ -164,7 +171,7 @@ def form_hierarchy(bn, hie=None, condense=True):
     else:
         root = NodeGroup('root', bn.OrderedNodes)
 
-    root.print()
+    # root.print()
 
     all_fixed = root.get_all()
     all_floated = [nod for nod in bn.OrderedNodes if nod not in all_fixed]
@@ -176,7 +183,6 @@ def form_hierarchy(bn, hie=None, condense=True):
 
     all_floated = [nod for nod in all_floated if nod not in bn.ExogenousNodes]
     for nod in all_floated:
-        root.catch(nod)
         root.pass_down(nod, g)
 
     if not condense:
@@ -188,6 +194,139 @@ def form_hierarchy(bn, hie=None, condense=True):
         root.raise_up(nod, g)
 
     return root
+
+
+def analyse_node_type(bn, root, report=False):
+    """
+    Analyse nodes in each group based on their potential characteristics.
+    A node which can be an actor must be a leaf of the given DAG.
+    A node which can carry stochastic effects must not be an ancestor of nodes in lower models.
+
+    :param bn: epidag.BayesNet, a Bayesian Network
+    :param root: root node group
+    :param report: True if report print needed
+    :return: dict, key = Group name, value = (Should be fixed, Can be random, Can be actors)
+    """
+    g = bn.DAG
+    leaves = bn.LeafNodes
+
+    res = dict()
+
+    def fn(ng, ind=0):
+        fix, ran, act = list(), list(), list()
+        for node in ng.Nodes:
+            if node in leaves:
+                act.append(node)
+            elif nx.descendants(g, node) < ng.Nodes:
+                ran.append(node)
+            else:
+                fix.append(node)
+
+        res[ng.Name] = fix, ran, act
+        if report:
+            print('{}Group {}'.format('--' * ind, ng.Name))
+            print('{}Must be fixed: {}'.format('  ' * ind, fix))
+            print('{}Can be random: {}'.format('  ' * ind, ran))
+            print('{}Can be actors: {}'.format('  ' * ind, act))
+
+        for chd in ng.Children:
+            fn(chd, ind + 1)
+
+    fn(root)
+    return res
+
+
+class SimulationGroup:
+    def __init__(self, bn, ng, fixed, random, actors, pas):
+        self.Name = ng.Name
+        self.BN = bn
+        self.Listening = set(pas)
+        self.BeFixed = set(fixed)
+        self.BeRandom = set(random)
+        self.BeActors = set(actors)
+        self.Children = dict()
+
+    def sample(self, nickname):
+        pass
+
+    def to_json(self):
+        return {
+            'Name': self.Name,
+            'Listening': list(self.Listening),
+            'BeFixed': list(self.BeFixed),
+            'BeRandom': list(self.BeRandom),
+            'BeActors': list(self.BeActors),
+            'Children': {k: v.to_json() for k, v in self.Children.items()}
+        }
+
+    def copy(self):
+        pass
+
+
+def to_simulation_core(bn, hie=None, bp=None, root=None, reduce=True):
+    if not bp:
+        root = root if root else dag.form_hierarchy(bn, hie)
+        bp = dag.analyse_node_type(bn, root)
+
+    g = bn.DAG
+
+    if reduce:
+        bp = {k: (v0 + v1, [], v2) for k, (v0, v1, v2) in bp.items()}
+
+    def fn(ng):
+        fi, ra, ac = bp[ng.Name]
+        pas = set.union(*[set(g.predecessors(node)) for node in ng.Nodes])
+        pas = pas - ng.Nodes
+        sg = SimulationGroup(bn, ng, fi, ra, ac, pas)
+
+        for chd in ng.Children:
+            sg.Children[chd.Name] = fn(chd)
+
+        return sg
+
+    return fn(root)
+
+
+
+class SimulationActor(metaclass=ABCMeta):
+    def __init__(self, field):
+        self.Field = field
+
+    @abstractmethod
+    def sample(self, pas=None):
+        pass
+
+
+class CompoundActor(SimulationActor):
+    def __init__(self, field, flow):
+        SimulationActor.__init__(self, field)
+        self.Flow = list(flow)
+
+    def sample(self, pas=None):
+        pas = dict(pas) if pas else dict()
+        for loc in self.Flow:
+            pas[loc.Name] = loc.sample(pas)
+        return pas[self.Field]
+
+
+class SingleActor(SimulationActor):
+    def __init__(self, field, di):
+        SimulationActor.__init__(self, field)
+        self.Loci = di
+
+    def sample(self, pas=None):
+        pas = dict(pas) if pas else dict()
+        return self.Loci.sample(pas)
+
+
+class FrozenSingleActor(SimulationActor):
+    def __init__(self, field, di, pas):
+        SimulationActor.__init__(self, field)
+        self.Loci = di
+        self.Dist = di.get_distribution(pas)
+
+    def sample(self, pas=None):
+        return self.Dist.sample()
 
 
 '''
@@ -309,48 +448,3 @@ class SimulationModel:
     def to_json(self):
         return self.DAG.to_json()
 '''
-
-if __name__ == '__main__':
-    pars1 = """
-    {
-        x = 1
-        beta0 ~ norm(10, 0.02)
-        beta1 ~ norm(0.5, 0.1)
-        mu = beta0 + beta1*x
-        sigma ~ gamma(0.01, 0.01)
-        y ~ norm(mu, sigma)
-    }
-    """
-
-    from epidag import DirectedAcyclicGraph
-    dag1 = DirectedAcyclicGraph(pars1)
-
-    sim = dag1.get_simulation_model()
-    print(sim)
-
-    pc1 = sim.sample_core()
-    print(pc1)
-    pc2 = sim.sample_core()
-    print(pc2)
-    print(pc1.difference(pc2))
-    print(dag1.get_descendants(['x']))
-
-    pars2 = """
-        {
-            a = 1
-            b ~ unif(1, 4)
-            c = a + b
-            d ~ k(b + c)
-            e ~ exp(b)
-        }
-        """
-
-    dag2 = DirectedAcyclicGraph(pars2)
-
-    sim = dag2.get_simulation_model()
-    print(sim)
-
-    pc1 = sim.sample_core()
-    print(pc1)
-    pc2 = sim.intervene_core(pc1, {'a': 3})
-    print(pc2)
