@@ -32,6 +32,7 @@ class ScriptException(Exception):
     def __repr__(self):
         return self.Err
 
+
 class Sampler(object):
     """
     A sampler to sample random integer with weight

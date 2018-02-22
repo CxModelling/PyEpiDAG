@@ -1,6 +1,7 @@
 import epidag as dag
 import re
 import networkx as nx
+from networkx.drawing.nx_agraph import graphviz_layout
 
 __author__ = 'TimeWz667'
 
@@ -86,6 +87,9 @@ class BayesianNetwork:
     def __getitem__(self, item):
         return self.DAG.nodes[item]['loci']
 
+    def sort(self, nodes):
+        return [node for node in self.OrderedNodes if node in nodes]
+
     def copy(self):
         return BayesianNetwork(self.Source)
 
@@ -98,6 +102,10 @@ class BayesianNetwork:
             v = self.DAG.nodes[k]
             ss.append('\t{}'.format(v['loci']))
         return '\n'.join(ss)
+
+    def plot(self):
+        pos = graphviz_layout(self.DAG, prog='dot')
+        nx.draw(self.DAG, pos, with_labels=True, arrows=True)
 
     __repr__ = __str__
 

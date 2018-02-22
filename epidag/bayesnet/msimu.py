@@ -1,11 +1,11 @@
 import epidag as dag
+from epidag.bayesnet import Gene
 from abc import ABCMeta, abstractmethod
 import networkx as nx
 
 
 __all__ = ['sample', 'sample_minimally', 'form_hierarchy',
-           'analyse_node_type', 'to_simulation_core',
-           'CompoundActor', 'SingleActor', 'FrozenSingleActor']
+           'analyse_node_type', 'formulate_blueprint', 'SimulationCore']
 
 
 def sample(bn, cond=None):
@@ -132,12 +132,13 @@ class NodeGroup:
             chd.print(i + 1)
 
 
-def form_hierarchy(bn, hie=None, condense=True):
+def form_hierarchy(bn, hie=None, condense=True, root='root'):
     """
 
     :param bn: epidag.BayesNet, a Bayesian Network
     :param hie: hierarical structure of the nodes of bn
     :param condense: True if attempting to hoist nodes to high hierarchy as possible
+    :param root: name of root group
     :return: A tree structure with NodeGroup
     """
     g = bn.DAG
@@ -160,16 +161,16 @@ def form_hierarchy(bn, hie=None, condense=True):
 
     # check order
     if isinstance(hie, dict):
-        root = define_node('root', hie)
+        root = define_node(root, hie)
 
     elif isinstance(hie, list):
-        root = NodeGroup('root', hie[0])
+        root = NodeGroup(root, hie[0])
         ng1 = root
         for i, hi in enumerate(hie[1:], 2):
             ng0, ng1 = ng1, NodeGroup('Layer {}'.format(i), hi)
             ng0.append_chd(ng1)
     else:
-        root = NodeGroup('root', bn.OrderedNodes)
+        root = NodeGroup(root, bn.OrderedNodes)
 
     # root.print()
 
@@ -236,56 +237,41 @@ def analyse_node_type(bn, root, report=False):
     return res
 
 
-class SimulationGroup:
-    def __init__(self, bn, ng, fixed, random, actors, pas):
-        self.Name = ng.Name
-        self.BN = bn
-        self.Listening = set(pas)
-        self.BeFixed = set(fixed)
-        self.BeRandom = set(random)
-        self.BeActors = set(actors)
-        self.Children = dict()
+def formulate_blueprint(bn, root, random, out):
+    """
+    a blueprint of a simulation model based on given a Bayesian network.
+    It describes every node in the network as 1) fixed variable, 2) random variable, 3) exposed distribution
+    :param bn: epidag.BayesNet, a Bayesian Network
+    :param root: root node group
+    :param random: nodes with random effects within an individual
+    :param out: nodes can be used in simulation model
+    :return: a blueprint of simulation model
+    """
+    suggest = analyse_node_type(bn, root, report=False)
+    random = random if random else list()
+    out = out if out else set.union(*[set(act) for (_, _, act) in suggest.values()])
+    out = [o for o in out if o not in random]
 
-    def sample(self, nickname):
-        pass
+    approved = dict()
+    for k, (fs, rs, cs) in suggest.items():
+        afs = list(fs)
 
-    def to_json(self):
-        return {
-            'Name': self.Name,
-            'Listening': list(self.Listening),
-            'BeFixed': list(self.BeFixed),
-            'BeRandom': list(self.BeRandom),
-            'BeActors': list(self.BeActors),
-            'Children': {k: v.to_json() for k, v in self.Children.items()}
-        }
+        ars = list()
+        for r in rs:
+            (ars if r in random else afs).append(r)
 
-    def copy(self):
-        pass
+        acs = list()
+        for c in cs:
+            if c in out:
+                acs.append(c)
+            elif c in random:
+                ars.append(c)
+            else:
+                afs.append(c)
 
-
-def to_simulation_core(bn, hie=None, bp=None, root=None, reduce=True):
-    if not bp:
-        root = root if root else dag.form_hierarchy(bn, hie)
-        bp = dag.analyse_node_type(bn, root)
-
-    g = bn.DAG
-
-    if reduce:
-        bp = {k: (v0 + v1, [], v2) for k, (v0, v1, v2) in bp.items()}
-
-    def fn(ng):
-        fi, ra, ac = bp[ng.Name]
-        pas = set.union(*[set(g.predecessors(node)) for node in ng.Nodes])
-        pas = pas - ng.Nodes
-        sg = SimulationGroup(bn, ng, fi, ra, ac, pas)
-
-        for chd in ng.Children:
-            sg.Children[chd.Name] = fn(chd)
-
-        return sg
-
-    return fn(root)
-
+        approved[k] = afs, ars, acs
+    # todo detect unwilling changes
+    return approved
 
 
 class SimulationActor(metaclass=ABCMeta):
@@ -308,6 +294,9 @@ class CompoundActor(SimulationActor):
             pas[loc.Name] = loc.sample(pas)
         return pas[self.Field]
 
+    def __repr__(self):
+        return '{} ({})'.format(self.Field, '->'.join(f.Name for f in self.Flow))
+
 
 class SingleActor(SimulationActor):
     def __init__(self, field, di):
@@ -317,6 +306,9 @@ class SingleActor(SimulationActor):
     def sample(self, pas=None):
         pas = dict(pas) if pas else dict()
         return self.Loci.sample(pas)
+
+    def __repr__(self):
+        return '{} ({})'.format(self.Field, self.Loci.Func)
 
 
 class FrozenSingleActor(SimulationActor):
@@ -328,6 +320,189 @@ class FrozenSingleActor(SimulationActor):
     def sample(self, pas=None):
         return self.Dist.sample()
 
+    def __repr__(self):
+        return '{} ({})'.format(self.Field, self.Dist.Dist)
+
+
+class ParameterCore(Gene):
+    def __init__(self, nickname, sg, vs, actors, prior):
+        Gene.__init__(self, vs, prior)
+        self.Nickname = nickname
+        self.SG = sg
+        self.Parent = None
+        self.Actors = dict(actors)
+        self.Children = dict()
+
+    def breed(self, nickname, group):
+        if nickname in self.Children:
+            raise ValueError('{} has already existed'.format(nickname))
+        chd = self.SG.breed(nickname, group, self)
+        self.Children[nickname] = chd
+        return chd
+
+    def get_child(self, name):
+        return self.Children[name]
+
+    def find_child(self, address):
+        sel = self
+        names = address.split('@')
+        if len(names) < 2:
+            return sel
+        for name in names[1:]:
+            sel = sel.get_child(name)
+        return sel
+
+    def impulse(self, imp):
+        imp = dict(imp)
+        pass
+
+    def reset_sc(self, sc):
+        self.SG = sc[self.SG.Name]
+        for v in self.Children.values():
+            v.reset_sc(self, sc)
+
+    @property
+    def DeepLogPrior(self):
+        return self.LogPrior + sum(v.DeepLogPrior for v in self.Children.values())
+
+    def __iter__(self):
+        if self.Parent:
+            for v in iter(self.Parent):
+                yield v
+        for v in self.Locus.items():
+            yield v
+
+    def deep_print(self, i=0):
+        prefix = '--' * i + ' ' if i else ''
+        print('{}{} ({})'.format(prefix, self.Nickname, self))
+        for k, chd in self.Children.items():
+            chd.deep_print(i + 1)
+
+
+class SimulationGroup:
+    def __init__(self, name, fixed, random, actors, pas):
+        self.Name = name
+        self.SC = None
+        self.Listening = list(pas)
+        self.BeFixed = set(fixed)
+        self.BeRandom = set(random)
+        self.BeActors = set(actors)
+        self.FixedChain = None
+        self.Children = list()
+
+    def set_simulation_core(self, sc):
+        self.SC = sc
+        bn = sc.BN
+        self.FixedChain = [bn[node] for node in bn.sort(self.BeFixed)]
+
+    def form_actor(self, bn, g, act, pas):
+        pa = set(g.predecessors(act))
+        if pa.intersection(self.BeRandom):
+            flow = set.intersection(nx.ancestors(g, act), self.BeRandom)
+            flow = bn.sort(flow)
+            flow = [bn[nod] for nod in flow]
+            return CompoundActor(act, flow)
+        elif pa.intersection(self.BeFixed):
+            return SingleActor(act, bn[act])
+        else:
+            return FrozenSingleActor(act, bn[act], pas)
+
+    def actors(self, pas):
+        bn = self.SC.BN
+        g = bn.DAG
+
+        for act in self.BeActors:
+            yield act, self.form_actor(bn, g, act, pas)
+
+    def generate(self, nickname, exo):
+        pas = dict(exo)
+        vs = dict(pas)
+        prior = 0
+        for loci in self.FixedChain:
+            if loci.Name not in vs:
+                vs[loci.Name] = loci.sample(vs)
+            prior += loci.evaluate(vs)
+
+        actors = self.actors(vs)
+        vs = {k: v for k, v in vs.items() if k in self.BeFixed}
+        # todo hoist
+        return ParameterCore(nickname, self, vs, actors, prior)
+
+    def breed(self, nickname, group, pa):
+        if group not in self.Children:
+            raise KeyError('No matched group')
+        chd = self.SC[group].generate(nickname, pa)
+        chd.Parent = pa
+        return chd
+
+    def __repr__(self):
+        return '{}({}|{}|{}->{})'.format(self.Name,
+                                         self.BeFixed, self.BeRandom, self.BeActors,
+                                         self.Children)
+
+    def to_json(self):
+        return {
+            'Name': self.Name,
+            'Listening': list(self.Listening),
+            'BeFixed': list(self.BeFixed),
+            'BeRandom': list(self.BeRandom),
+            'BeActors': list(self.BeActors),
+            'Children': list(self.Children)
+        }
+
+
+def get_simulation_groups(bn, bp, root):
+    g = bn.DAG
+
+    sgs = dict()
+    for k, (fs, rs, cs) in bp.items():
+        nodes = set(fs + rs + cs)
+        pas = set.union(*[set(g.predecessors(node)) for node in nodes])
+        pas = pas - nodes
+        sgs[k] = SimulationGroup(k, fs, rs, cs, pas)
+
+    def set_children(ng):
+        sg = sgs[ng.Name]
+        for chd in ng.Children:
+            sg.Children.append(chd.Name)
+            set_children(chd)
+
+    set_children(root)
+
+    return sgs
+
+
+class SimulationCore:
+    def __init__(self, bn, bp=None, root=None, hoist=True):
+        self.Name = bn.Name
+        self.BN = bn
+        self.RootSG = root.Name
+        self.SGs = get_simulation_groups(bn, bp, root)
+        for sg in self.SGs.values():
+            sg.set_simulation_core(self)
+        self.Hoist = hoist
+
+    def __getitem__(self, item):
+        return self.SGs[item]
+
+    def get(self, item):
+        try:
+            return self.SGs[item]
+        except KeyError:
+            raise KeyError('Unknown group')
+
+    def generate(self, nickname, exo):
+        exo = exo if exo else dict()
+        return self.SGs[self.RootSG].generate(nickname, exo)
+
+    def to_json(self):
+        return {
+            'BayesianNetwork': self.BN.to_json(),
+            'Root': self.RootSG
+        }
+
+    def __repr__(self):
+        return 'Simulation core: {}'.format(self.Name)
 
 '''
 class ParameterCore(Gene):

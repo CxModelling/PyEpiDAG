@@ -8,5 +8,6 @@ setup(
     license='MIT',
     author='TimeWz',
     author_email='TimeWz667@gmail.com',
-    description='Epidemiological inference with DAG', install_requires=['pandas', 'networkx', 'numpy', 'scipy']
+    description='Epidemiological inference with DAG', install_requires=['pandas', 'networkx',
+                                                                        'numpy', 'scipy', 'matplotlib']
 )

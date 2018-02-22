@@ -170,6 +170,10 @@ class CategoricalRV(AbsDistribution):
         self.p = self.p / self.p.sum()
 
     @property
+    def Dist(self):
+        return self.Name
+
+    @property
     def Interval(self):
         return None, None
 
@@ -178,7 +182,10 @@ class CategoricalRV(AbsDistribution):
         return 'Category'
 
     def logpdf(self, v):
-        return np.array([x*np.log(self.kv[k]) for k, x in v.items()]).sum()
+        try:
+            return np.array([x*np.log(self.kv[k]) for k, x in v.items()]).sum()
+        except AttributeError:
+            return np.log(self.kv[v])
 
     def sample(self, n=1, **kwargs):
         sam = rd.choice(self.cat, n, p=self.p)

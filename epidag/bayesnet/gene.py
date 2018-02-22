@@ -1,14 +1,20 @@
 import pandas as pd
 
 
+__all__ = ['Gene']
+
+
 class Gene:
     def __init__(self, vs=None, prior=0):
-        self.Locus = {k: v for k, v in vs.items()} if vs else dict()
+        self.Locus = dict(vs) if vs else dict()
         self.LogPrior = prior
         self.LogLikelihood = 0
 
     def __len__(self):
         return len(self.Locus)
+
+    def __iter__(self):
+        return iter(self.Locus.items())
 
     def __getitem__(self, item):
         return self.Locus[item]
@@ -23,7 +29,7 @@ class Gene:
         return g
 
     def __repr__(self):
-        return ", ".join(['{}: {:g}'.format(k, v) for k, v in self.Locus.items()])
+        return ", ".join([('{}: {:g}' if isinstance(v, float) else '{}: {}').format(k, v) for k, v in self.Locus.items()])
 
     @property
     def LogPosterior(self):

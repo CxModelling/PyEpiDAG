@@ -20,7 +20,3 @@ def get_sufficient_nodes(g, included, given):
             mi.remove_edge(pa, nod)
     # find the nodes supporting the included nodes
     return set.union(*[nx.ancestors(mi, nod) for nod in included]).union(included)
-
-
-def partition_graph(g, target, fixed, random):
-    pass
