@@ -44,13 +44,3 @@ class Gene:
     def mean(genes):
         df = pd.DataFrame([gene.Locus for gene in genes])
         return dict(df.mean())
-
-    @staticmethod
-    def to_json(file, genes):
-        df = pd.DataFrame([gene.Locus for gene in genes])
-        df.to_json(file, orient='records')
-
-    @staticmethod
-    def to_csv(file, genes):
-        df = pd.DataFrame([gene.Locus for gene in genes])
-        df.to_csv(file)

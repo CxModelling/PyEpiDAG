@@ -186,11 +186,7 @@ def form_hierarchy(bn, hie=None, condense=True, root='root'):
     for nod in all_floated:
         root.pass_down(nod, g)
 
-    if not condense:
-        return root
-
     all_floated.reverse()
-
     for nod in all_floated:
         root.raise_up(nod, g)
 
@@ -325,13 +321,18 @@ class FrozenSingleActor(SimulationActor):
 
 
 class ParameterCore(Gene):
-    def __init__(self, nickname, sg, vs, actors, prior):
+    def __init__(self, nickname, sg, vs, prior):
         Gene.__init__(self, vs, prior)
         self.Nickname = nickname
         self.SG = sg
         self.Parent = None
-        self.Actors = dict(actors)
+        self.Actors = dict()
         self.Children = dict()
+        self.ChildrenActors = dict()
+
+    @property
+    def Group(self):
+        return self.SG.Name
 
     def breed(self, nickname, group):
         if nickname in self.Children:
@@ -339,6 +340,28 @@ class ParameterCore(Gene):
         chd = self.SG.breed(nickname, group, self)
         self.Children[nickname] = chd
         return chd
+
+    def list_sampler(self):
+        for k in self.Actors.keys():
+            yield k
+
+        if self.Parent:
+            actors = self.Parent.ChildActors[self.SG.Name]
+            for k in actors:
+                yield k
+
+    def get_sampler(self, sampler):
+        try:
+            return self.Actors[sampler]
+        except KeyError:
+            pass
+
+        try:
+            return self.Parent.ChildActors[self.SG.Name][sampler]
+        except AttributeError:
+            raise KeyError('No {} found')
+        except KeyError:
+            raise KeyError('No {} found')
 
     def get_child(self, name):
         return self.Children[name]
@@ -352,9 +375,24 @@ class ParameterCore(Gene):
             sel = sel.get_child(name)
         return sel
 
-    def impulse(self, imp):
+    def impulse(self, imp, shocked=None):
         imp = dict(imp)
-        pass
+        if shocked is None:
+            g = self.SG.SC.BN.DAG
+            shocked = set.union(*[set(nx.descendants(g, k)) for k in imp.keys()])
+
+        shocked_locus = [s for s in shocked if s in self.Locus]
+        shocked_actors = [k for k, v in self.Actors.items() if k in shocked and isinstance(v, FrozenSingleActor)]
+
+        shocked_hoist = dict()
+        for k, v in self.ChildrenActors.items():
+            shocked_hoist[k] = [s for s, t in v.items() if s in shocked and isinstance(v, FrozenSingleActor)]
+
+        if shocked_locus or shocked_actors or shocked_hoist:
+            self.SG.set_response(imp, shocked_locus, shocked_actors, shocked_hoist, self)
+
+        for v in self.Children.values():
+            v.impulse(imp, shocked)
 
     def reset_sc(self, sc):
         self.SG = sc[self.SG.Name]
@@ -371,6 +409,13 @@ class ParameterCore(Gene):
                 yield v
         for v in self.Locus.items():
             yield v
+
+    def to_json(self):
+        return {
+            'Locus': self.Locus,
+            'LogPrior': self.LogPrior,
+            'LogLikelihood': self.LogLikelihood
+        }
 
     def deep_print(self, i=0):
         prefix = '--' * i + ' ' if i else ''
@@ -414,7 +459,7 @@ class SimulationGroup:
         for act in self.BeActors:
             yield act, self.form_actor(bn, g, act, pas)
 
-    def generate(self, nickname, exo):
+    def generate(self, nickname, exo, actor=True):
         pas = dict(exo)
         vs = dict(pas)
         prior = 0
@@ -423,16 +468,48 @@ class SimulationGroup:
                 vs[loci.Name] = loci.sample(vs)
             prior += loci.evaluate(vs)
 
-        actors = self.actors(vs)
         vs = {k: v for k, v in vs.items() if k in self.BeFixed}
-        # todo hoist
-        return ParameterCore(nickname, self, vs, actors, prior)
+
+        pc = ParameterCore(nickname, self, vs, prior)
+        if actor:
+            pc.Actors = dict(self.actors(vs))
+        return pc
+
+    def set_response(self, imp, fixed, actors, hoist, pc):
+        prior = 0
+        for loci in self.FixedChain:
+            if loci.Name in imp:
+                pc.Locus[loci.Name] = imp[loci.Name]
+            elif loci.Name in fixed:
+                pc.Locus[loci.Name] = loci.sample(pc)
+            prior += loci.evaluate(pc)
+
+        pc.LogPrior = prior
+
+        bn = self.SC.BN
+
+        for act in actors:
+            pc.Actors[act] = FrozenSingleActor(act, bn[act], pc)
+
+        for chd, acts in hoist.items():
+            for act in acts:
+                pc.ChildrenActors[chd][act] = FrozenSingleActor(act, bn[act], pc)
 
     def breed(self, nickname, group, pa):
         if group not in self.Children:
             raise KeyError('No matched group')
-        chd = self.SC[group].generate(nickname, pa)
-        chd.Parent = pa
+
+        ch_sc = self.SC[group]
+        if self.SC.Hoist:
+            chd = ch_sc.generate(nickname, pa, False)
+            chd.Parent = pa
+            if group not in pa.ChildrenActors:
+                pa.ChildrenActors[group] = dict(self.actors(chd))
+        else:
+            chd = ch_sc.generate(nickname, pa, True)
+            chd.Parent = pa
+
+
         return chd
 
     def __repr__(self):

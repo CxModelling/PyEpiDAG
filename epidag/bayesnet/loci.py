@@ -109,7 +109,8 @@ class DistributionLoci(Loci):
         return self.Parent
 
     def get_distribution(self, pas):
-        return parse_distribution(self.Func, glo=MATH_FUNC, loc=pas)
+        dd = dict(pas)
+        return parse_distribution(self.Func, glo=MATH_FUNC, loc=dict(pas))
 
     def sample(self, pas=None):
         return self.get_distribution(pas).sample()
@@ -143,7 +144,10 @@ class FunctionLoci(Loci):
         return self.Parent
 
     def sample(self, pas=None):
-        return eval(self.Func, MATH_FUNC, pas)
+        try:
+            return eval(self.Func, MATH_FUNC, pas)
+        except NameError:
+            return eval(self.Func, MATH_FUNC, dict(pas))
 
     def evaluate(self, pas=None):
         return 0
