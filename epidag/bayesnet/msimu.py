@@ -335,6 +335,12 @@ class ParameterCore(Gene):
         return self.SG.Name
 
     def breed(self, nickname, group):
+        """
+        Generate an offspring node
+        :param nickname: nickname
+        :param group: target group of new parameter node
+        :return:
+        """
         if nickname in self.Children:
             raise ValueError('{} has already existed'.format(nickname))
         chd = self.SG.breed(nickname, group, self)
@@ -351,6 +357,11 @@ class ParameterCore(Gene):
                 yield k
 
     def get_sampler(self, sampler):
+        """
+        Get a sampler of a specific variable
+        :param sampler: name of the target sampler
+        :return:
+        """
         try:
             return self.Actors[sampler]
         except KeyError:
@@ -367,6 +378,11 @@ class ParameterCore(Gene):
         return self.Children[name]
 
     def find_child(self, address):
+        """
+        Find a child node
+        :param address: str, a series of names of nodes linked with '@'
+        :return: a child node in the address
+        """
         sel = self
         names = address.split('@')
         if len(names) < 2:
@@ -376,6 +392,11 @@ class ParameterCore(Gene):
         return sel
 
     def impulse(self, imp, shocked=None):
+        """
+        Do interventions
+        :param imp: dict, intervention
+        :param shocked: Do not manually input
+        """
         imp = dict(imp)
         if shocked is None:
             g = self.SG.SC.BN.DAG
@@ -401,6 +422,10 @@ class ParameterCore(Gene):
 
     @property
     def DeepLogPrior(self):
+        """
+        Log prior with that of offsprings
+        :return: log prior probability
+        """
         return self.LogPrior + sum(v.DeepLogPrior for v in self.Children.values())
 
     def __iter__(self):
