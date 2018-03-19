@@ -34,7 +34,7 @@ hie = {
 }
 
 
-ng = dag.form_hierarchy(bn, hie, root='country', condense=False)
+ng = dag.form_hierarchy(bn, hie, root='country')
 bp = dag.formulate_blueprint(bn, ng, random=['muA'], out=['foodstore', 'bmiA', 'bmiB'])
 
 sc = dag.SimulationCore(bn, bp, ng)

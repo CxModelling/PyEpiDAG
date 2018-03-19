@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 import networkx as nx
 
 
-__all__ = ['sample', 'sample_minimally', 'form_hierarchy',
+__all__ = ['sample', 'sample_minimally',
            'analyse_node_type', 'formulate_blueprint', 'SimulationCore']
 
 

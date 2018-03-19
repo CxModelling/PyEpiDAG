@@ -1,7 +1,7 @@
 import networkx as nx
 
 __author__ = 'TimeWz667'
-__all__ = ['get_sufficient_nodes']
+__all__ = ['get_sufficient_nodes', 'form_hierarchy']
 
 
 def get_sufficient_nodes(g, included, given):
