@@ -6,7 +6,6 @@ from .gene import *
 from .dag import *
 from .msimu import *
 # from .mbayes import *
-# from .msimu import *
 # from .mcausal import *
 
 
