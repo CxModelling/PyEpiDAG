@@ -4,8 +4,7 @@ import numpy as np
 import numpy.random as rd
 from abc import ABCMeta, abstractmethod
 from epidag.factory import get_workshop
-import factory.arguments as vld
-
+import epidag.factory.arguments as vld
 
 __author__ = 'TimeWz667'
 __all__ = ['AbsDistribution', 'SpDouble', 'SpInteger', 'DistributionCentre', 'parse_distribution']
@@ -35,7 +34,7 @@ class AbsDistribution(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def sample(self, n=1):
+    def sample(self, n=1, **kwargs):
         pass
 
     @abstractmethod
@@ -64,7 +63,7 @@ class SpDouble(AbsDistribution):
         AbsDistribution.__init__(self, name)
         self.Dist = dist
 
-    def sample(self, n=1):
+    def sample(self, n=1, **kwargs):
         if n is 1:
             return self.Dist.rvs()
         return self.Dist.rvs(n)
@@ -95,7 +94,7 @@ class SpInteger(AbsDistribution):
         AbsDistribution.__init__(self, name)
         self.Dist = dist
 
-    def sample(self, n=1):
+    def sample(self, n=1, **kwargs):
         if n is 1:
             return round(self.Dist.rvs())
         return np.round(self.Dist.rvs(n))
@@ -139,7 +138,7 @@ class Const(AbsDistribution):
     def Type(self):
         return type(self.K)
 
-    def sample(self, n=1):
+    def sample(self, n=1, **kwargs):
         if n > 1:
             return np.array([self.K] * n)
         return self.K
@@ -171,6 +170,10 @@ class CategoricalRV(AbsDistribution):
         self.p = self.p / self.p.sum()
 
     @property
+    def Dist(self):
+        return self.Name
+
+    @property
     def Interval(self):
         return None, None
 
@@ -179,10 +182,17 @@ class CategoricalRV(AbsDistribution):
         return 'Category'
 
     def logpdf(self, v):
-        return np.array([x*np.log(self.kv[k]) for k, x in v.items()]).sum()
+        try:
+            return np.array([x*np.log(self.kv[k]) for k, x in v.items()]).sum()
+        except AttributeError:
+            return np.log(self.kv[v])
 
-    def sample(self, n=1):
-        return rd.choice(self.cat, n, p=self.p)
+    def sample(self, n=1, **kwargs):
+        sam = rd.choice(self.cat, n, p=self.p)
+        if n == 1:
+            return sam[0]
+        else:
+            return sam
 
     def mean(self):
         return 0
@@ -212,7 +222,7 @@ class EmpiricalRV(AbsDistribution):
     def logpdf(self, v):
         return self.Logpdf(v)
 
-    def sample(self, n=1):
+    def sample(self, n=1, **kwargs):
         return self.Fn(rd.random(n))
 
     def mean(self):
@@ -246,16 +256,16 @@ def d_lnorm(name, meanlog, sdlog):
     return SpDouble(name, sts.lognorm(s=meanlog, scale=np.exp(sdlog)))
 
 
-DistributionCentre.register('lnorm', d_lnorm, [vld.Float('meanlog', default=0),
+DistributionCentre.register('lnorm', d_lnorm, [vld.PositiveFloat('meanlog', default=0),
                                                vld.PositiveFloat('sdlog', default=1.0)])
 
 
-def d_unif(name, min, max):
-    return SpDouble(name, sts.uniform(min, max-min))
+def d_unif(name, mi, ma):
+    return SpDouble(name, sts.uniform(mi, ma-mi))
 
 
-DistributionCentre.register('unif', d_unif, [vld.Float('min', default=0),
-                                             vld.Float('max', default=1.0)])
+DistributionCentre.register('unif', d_unif, [vld.Float('mi', default=0),
+                                             vld.Float('ma', default=1.0)])
 
 
 def d_chi2(name, df):
@@ -285,7 +295,7 @@ def d_norm(name, mean, sd):
     return SpDouble(name, sts.norm(loc=mean, scale=sd))
 
 
-DistributionCentre.register('norm', d_norm, [vld.PositiveFloat('mean', default=0),
+DistributionCentre.register('norm', d_norm, [vld.Float('mean', default=0),
                                              vld.PositiveFloat('sd', default=1.0)])
 
 
@@ -312,8 +322,8 @@ DistributionCentre.register('binom', d_binom, [vld.PositiveInteger('size', defau
 DistributionCentre.register('cat', CategoricalRV, [vld.ProbTab('kv')])
 
 
-def parse_distribution(name, di=None):
-    return DistributionCentre.parse(name, di)
+def parse_distribution(name, di=None, glo=None, loc=None):
+    return DistributionCentre.parse(name, di, env=glo, loc=loc)
 
 
 if __name__ == '__main__':
@@ -332,7 +342,7 @@ if __name__ == '__main__':
         print(di.to_json())
         print(di.mean())
 
-    dist_cat = parse_distribution('cat({"M": 3411,"O": 3502,"Y": 52})')
+    dist_cat = parse_distribution('cat({"M": 3411,"O": kk,"Y": 52})', loc={'kk': 3500})
     from collections import Counter
     print(dist_cat.to_json())
     print(Counter(dist_cat.sample(10000)))

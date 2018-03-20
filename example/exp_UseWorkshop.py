@@ -1,6 +1,8 @@
 import epidag.factory as fac
 from collections import namedtuple
 
+__author__ = 'TimeWz667'
+
 print('Find a workshop being in charge of test objects')
 manager = fac.get_workshop('Test')
 print(manager)

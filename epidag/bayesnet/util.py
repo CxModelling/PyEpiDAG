@@ -1,9 +1,28 @@
 import numpy as np
 from numpy.random import uniform
 from scipy.misc import logsumexp
+import math
 
 __author__ = 'TimeWz667'
-__all__ = ['ScriptException', 'Sampler', 'resample']
+__all__ = ['ScriptException', 'Sampler', 'resample', 'MATH_FUNC']
+
+
+MATH_FUNC = {
+    'hypot': np.hypot,
+    'exp': np.exp,
+    'log': np.log,
+    'sin': np.sin,
+    'cos': np.cos,
+    'tan': np.tan,
+    'max': np.max,
+    'min': np.min,
+    'ceil': np.ceil,
+    'floor': np.floor,
+    'sqrt': np.sqrt,
+    'abs': np.abs,
+    'erf': math.erf,
+    'pow': math.pow
+}
 
 
 class ScriptException(Exception):
@@ -12,6 +31,7 @@ class ScriptException(Exception):
 
     def __repr__(self):
         return self.Err
+
 
 class Sampler(object):
     """

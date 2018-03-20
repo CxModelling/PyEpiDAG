@@ -14,9 +14,3 @@ x, y, p = resample(log([0.2, 0.05, 0.795]), ['A', 'B', 'C'], ['a', 'b', 'c'])
 print(x)
 print(y)
 print(p)
-
-
-
-
-
-

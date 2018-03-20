@@ -147,10 +147,10 @@ class Workshop:
         res.json = js
         return res
 
-    def parse(self, name, fn=None, env=None, js=True):
+    def parse(self, name, fn=None, env=None, loc=None, js=True):
         if not fn:
             fn = name
-        f, pars = parse_function(fn, env)
+        f, pars = parse_function(fn, env=env, loc=loc)
         creator = self.Creators[f]
         pars = creator.align_arguments(pars, self.Resources)
         res = creator.create(name, pars)

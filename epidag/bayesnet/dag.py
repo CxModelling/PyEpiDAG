@@ -1,297 +1,118 @@
-from epidag.bayesnet import Gene, BayesianModel, SimulationModel
-from collections import OrderedDict
-import json
+import epidag as dag
 import re
-from functools import reduce
+import networkx as nx
+from networkx.drawing.nx_agraph import graphviz_layout
 
 __author__ = 'TimeWz667'
 
 
-def script_to_json(script):
-    def find_parent(expr):
-        va, pa = None, list()
-        while not va:
-            try:
-                va = eval(expr)
-            except NameError as e:
-                los = re.match(r"name '(\w+)'", e.args[0])
-                los = los.group(1)
-                exec('{} = 0.87'.format(los))  # todo potential error
-                pa.append(los)
-            except SyntaxError as e:
-                raise e
-        return pa
-
+def bn_script_to_json(script):
+    # remove space
     pars = script.replace(' ', '')
     pars = pars.replace('\t', '')
+    # split lines
     pars = pars.split('\n')
     pars = [par for par in pars if par != '']
-    nodes = dict()
+
     try:
-        name = re.match(r"PCore\s*(?P<name>\w+)\s*\{", pars[0], re.IGNORECASE).group('name')
+        name = re.match(r'PCore\s*(?P<name>\w+)\s*\{', pars[0], re.IGNORECASE).group('name')
     except AttributeError:
-        name = 'PCore_{}'.format(1)
+        raise SyntaxError('Name does not identified')
 
+    nodes = dict()
+
+    all_fu = set()
+    all_pa = set()
     for p in pars:
-        if p.find('=') >= 0:
-            p = p.split('=', 1)
-            p_name, p_func = p[0], p[1]
-            try:
-                p_func = eval(p_func)
-                node = {'Type': 'Value', 'Def': p_func}
-            except NameError:
-                pas = find_parent(p_func)
+        if p.find('~') >= 0:
+            p = re.match(r'(\w+)\~(\S+\((\S+)\))', p, re.IGNORECASE)
+            p_name, p_func = p.group(1), p.group(3)
+            pas, fu = dag.parse_parents(p_func)
+            all_fu = all_fu.union(fu)
+            all_pa = all_pa.union(pas)
+            nodes[p_name] = {'Type': 'Distribution', 'Def': p.group(2), 'Parents': pas}
+        elif p.find('=') >= 0:
+            p = re.match(r'(\w+)\=(\S+)', p, re.IGNORECASE)
+            p_name, p_func = p.group(1), p.group(2)
+            pas, fu = dag.parse_parents(p_func)
+            all_fu = all_fu.union(fu)
+            all_pa = all_pa.union(pas)
+            if len(pas):
                 node = {'Type': 'Function', 'Def': p_func, 'Parents': pas}
-            finally:
-                nodes[p_name] = node
-        elif p.find('~') >= 0:
-            p = p.split('~', 1)
-            p_name, p_func = p[0], p[1]
-            args = p_func.split('(', 1)[1][:-1]
-            args = args.split(',')
-            pas = reduce(lambda x, y: x + y, [find_parent(arg) for arg in args])
-            pas = list(set(pas))
-            nodes[p_name] = {'Type': 'Distribution', 'Def': p_func, 'Parents': pas}
+            else:
+                node = {'Type': 'Value', 'Def': p_func}
+            nodes[p_name] = node
 
-    odn = OrderedDict()
-    dep = 0
-    while len(odn) < len(nodes) or dep > 10:
-        tmp = dict()
-        for k, node in nodes.items():
-            if k in odn:
-                continue
-            if 'Parents' not in node:
-                tmp[k] = node
-            elif all([pa in odn for pa in node['Parents']]):
-                tmp[k] = node
-        for k, v in tmp.items():
-            odn[k] = v
-        dep += 1
+    for pa in all_pa:
+        if pa not in nodes:
+            nodes[pa] = {'Type': 'ExoValue'}
 
-    js = {'Name': name, 'Nodes': nodes, 'Order': list(odn.keys()), 'Depth': dep}
+    js = {'Name': name, 'Nodes': nodes, 'Dependency': all_fu}
     return js
 
 
-class DirectedAcyclicGraph:
-    NumberDAG = 0
-
-    def __init__(self, script, is_js=False):
-        DirectedAcyclicGraph.NumberDAG += 1
-        js = script if is_js else script_to_json(script)
-
+class BayesianNetwork:
+    def __init__(self, js):
         self.Name = js['Name']
-        self.Locus = DirectedAcyclicGraph.restore_locus(js['Nodes'], js['Order'])
-        self.Depth = js['Depth']
-        self.Leaves = [k for k in self.Locus.keys() if not self.get_children(k)]
-        self.Roots = [k for k in self.Locus.keys() if not self.get_parents(k)]
-        self.Pathways = None
+        self.Source = js
+        self.DAG = nx.DiGraph()
+
+        for k, v in js['Nodes'].items():
+            if v['Type'] is 'Value':
+                loci = dag.ValueLoci(k, v['Def'])
+            elif v['Type'] is 'ExoValue':
+                loci = dag.ExoValueLoci(k)
+            elif v['Type'] is 'Distribution':
+                loci = dag.DistributionLoci(k, v['Def'])
+            else:
+                loci = dag.FunctionLoci(k, v['Def'])
+
+            self.DAG.add_node(k, loci=loci, **v)
+            if 'Parents' not in v:
+                continue
+            for pa in v['Parents']:
+                self.DAG.add_edge(pa, k)
+
+        if not nx.is_directed_acyclic_graph(self.DAG):
+            raise SyntaxError('Cyclic groups found')
+        if js['Dependency'] > dag.MATH_FUNC.keys():
+            raise SyntaxError('Known functions found')
+
+        nx.freeze(self.DAG)
+        self.ExogenousNodes = [k for k, v in self.DAG.nodes.data() if v['Type'] is 'ExoValue']
+        self.RootNodes = [k for k, v in self.DAG.pred.items() if len(v) is 0]
+        self.LeafNodes = [k for k, v in self.DAG.succ.items() if len(v) is 0]
+        self.OrderedNodes = list(nx.topological_sort(self.DAG))
 
     def __getitem__(self, item):
-        return self.Locus[item]
+        return self.DAG.nodes[item]['loci']
 
-    def get_parents(self, node):
-        return self[node].Parents
+    def sort(self, nodes):
+        return [node for node in self.OrderedNodes if node in nodes]
 
-    def get_children(self, node):
-        return [k for k, v in self.Locus.items() if node in v.Parents]
-
-    def get_descendants(self, nodes):
-        paths = self.Pathways if self.Pathways else self.get_pathways()
-
-        des = list()
-        for k, vs in paths.items():
-            if k in nodes:
-                for v in vs:
-                    des += v
-        des = list(set(des))
-        des = [k for k in des if k not in nodes]
-        return des
-
-    def get_pathways(self):
-        if self.Pathways:
-            return self.Pathways
-        ch = OrderedDict()
-        for k in self.Locus.keys():
-            ch[k] = list(self.get_children(k))
-
-        paths = OrderedDict()
-        for k in self.Locus.keys():
-            ps = list()
-            temp0, temp1 = [[k]], list()
-            while len(temp0) > 0:
-                for path in temp0:
-                    cs = ch[path[-1]]
-                    nc = len(cs)
-                    if nc == 0:
-                        ps.append(path)
-                    else:
-                        for c in cs:
-                            p = path.copy()
-                            p.append(c)
-                            temp1.append(p)
-                temp0, temp1 = temp1, list()
-            paths[k] = ps
-        self.Pathways = paths
-        return paths
-
-    def group(self, evi):
-        pws = self.get_pathways()
-        pws = {k: [p for p in ps if any(e in p for e in evi)] for k, ps in pws.items()}
-        pws = {k: ps for k, ps in pws.items() if ps}
-
-        group = OrderedDict()
-        med = list()
-        for k, paths in pws.items():
-            if k not in med and k not in evi:
-                group[k] = 'Prior', self.Locus[k]
-            else:
-                for path in paths:
-                    r = max([path.index(e) for e in evi if e in path])
-                    for i in range(r):
-                        p = path[i]
-                        if p not in evi and p not in med:
-                            med.append(p)
-            if k in med:
-                group[k] = 'Mediator', self.Locus[k]
-            elif k in evi:
-                group[k] = 'Evidence', self.Locus[k]
-        return group
-
-    def sample(self, cond=None):
-        vs = OrderedDict()
-        cond = cond if cond else dict()
-        prior = 0
-        for k, node in self.Locus.items():
-            if k in cond:
-                vs[k] = cond[k]
-                prior += node.evaluate(vs)
-            else:
-                try:
-                    di = node.get_distribution(vs)
-                    v = node.sample(vs)
-                    prior += di.logpdf(v)
-                except AttributeError:
-                    v = node.sample(vs)
-                finally:
-                    vs[k] = v
-
-        return Gene(vs, prior)
-
-    def sample_leaves(self, cond=None, need_vs=False):
-        cond = cond if cond else {}
-        vs = OrderedDict()
-        ds = OrderedDict()
-
-        for loci, v in self.Locus.items():
-            if loci in self.Leaves:
-                try:
-                    ds[loci] = v.get_distribution(vs)
-                except AttributeError:
-                    continue
-            elif loci in cond:
-                vs[loci] = cond[loci]
-            else:
-                vs[loci] = v.sample(vs)
-        if need_vs:
-            return ds, vs
-        else:
-            return ds
-
-    def intervene_leaves(self, intervention, cond=None):
-
-        cond = cond if cond else {}
-        des = self.get_descendants(intervention.keys())
-        cond = {k: v for k, v in cond.items() if k not in des}
-        cond.update(intervention)
-        return self.sample_leaves(cond, True)
-
-    def sample_distributions(self):
-        vs, ds = dict(), dict()
-        for k, node in self.Locus.items():
-            try:
-                di = node.get_distribution(vs)
-                v = node.sample(vs)
-                ds[k] = di
-            except AttributeError:
-                v = node.sample(vs)
-            finally:
-                vs[k] = v
-
-        return ds
-
-    def evaluate(self, gene):
-        """
-        calculate the prior probability of a parameter table
-        :param gene: a parameter table to be evaluate
-        :return: prior probability in log
-        """
-        p = [loci.evaluate(gene.Locus) for k, loci in self.Locus.items() if k in gene.Locus]
-        return sum(p)
-
-    def regularise(self, gene):
-        loc = gene.Locus
-        for k, loci in self.Locus:
-            if isinstance(loci, FunctionLoci) and k in loc:
-                loc[k] = loci.sample(loc)
-        gene.LogPrior = self.evaluate(gene)
-
-    def is_distribution(self, node):
-        return isinstance(self[node], DistributionLoci)
-
-    def is_function(self, node):
-        return isinstance(self[node], FunctionLoci)
-
-    def is_value(self, node):
-        return isinstance(self[node], ValueLoci)
-
-    def get_bayesian_model(self, evi):
-        return BayesianModel(self, self.group(evi))
-
-    def get_simulation_model(self):
-        return SimulationModel(self)
-
-    def get_causal_diagram(self, invisible):
-        # todo
-        pass
-
-    def __str__(self):
-        s = 'PCore {} '.format(self.Name)
-        s += '{\n\t'
-        s += '\n\t'.join([str(v) for v in self.Locus.values()])
-        s += '\n}'
-        return s
+    def copy(self):
+        return BayesianNetwork(self.Source)
 
     def to_json(self):
-        return {'Name': self.Name,
-                'Nodes': {k: loci.to_json() for k, loci in self.Locus.items()},
-                'Order': list(self.Locus.keys()),
-                'Depth': self.Depth}
+        return self.Source
 
-    @staticmethod
-    def from_json(js):
-        if isinstance(js, str):
-            js = json.loads(js)
+    def __str__(self):
+        ss = ['Name:\t{}'.format(self.Source['Name']), 'Nodes:']
+        for k in self.OrderedNodes:
+            v = self.DAG.nodes[k]
+            ss.append('\t{}'.format(v['loci']))
+        return '\n'.join(ss)
 
-        return DirectedAcyclicGraph(js, True)
+    def plot(self):
+        pos = graphviz_layout(self.DAG, prog='dot')
+        nx.draw(self.DAG, pos, with_labels=True, arrows=True)
 
-    @staticmethod
-    def restore_locus(nodes, order):
-        locus = OrderedDict()
-        for nd in order:
-            node = nodes[nd]
-            if node['Type'] == 'Value':
-                locus[nd] = ValueLoci(nd, node['Def'])
-            elif node['Type'] == 'Function':
-                locus[nd] = FunctionLoci(nd, node['Def'], node['Parents'])
-            elif node['Type'] == 'Distribution':
-                locus[nd] = DistributionLoci(nd, node['Def'], node['Parents'])
-
-        return locus
+    __repr__ = __str__
 
 
 if __name__ == '__main__':
     scr1 = '''
-    {
+    PCore A {
         w = 1
         x1 = 1/x
         v ~ norm(z, 0.1)
@@ -301,27 +122,13 @@ if __name__ == '__main__':
     }
     '''
 
-    js1 = script_to_json(scr1)
+    js1 = bn_script_to_json(scr1)
     print(js1)
 
-    dag1 = DirectedAcyclicGraph(scr1)
-
-    print(dag1)
-    print('Sampling')
-
-    sp1 = dag1.sample()
-    print(sp1)
-
-    print('\nPrior probability')
-    print(dag1.evaluate(sp1))
+    dag1 = BayesianNetwork(js1)
 
     print('\nTo JSON, FROM JSON')
-    js1 = dag1.to_json()
-    print(js1)
-    print(DirectedAcyclicGraph.from_json(js1))
-    print(DirectedAcyclicGraph.from_json(json.dumps(js1)))
-    sp1 = dag1.sample()
-    print(sp1)
+    print(dag1)
 
     #print(dag1.get_offsprings('y'))
 
