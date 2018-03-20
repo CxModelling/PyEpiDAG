@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 import networkx as nx
 
 
-__all__ = ['sample', 'sample_minimally',
+__all__ = ['sample', 'sample_minimally', 'as_simulation_core',
            'analyse_node_type', 'formulate_blueprint', 'SimulationCore']
 
 
@@ -22,7 +22,7 @@ def sample(bn, cond=None):
     return res
 
 
-def sample_minimally(bn, included, cond, sources=False):
+def sample_minimally(bn, included, cond=None, sources=False):
     """
     sample variables which are minimal requirements of having included
     :param bn: a Bayesian Network
@@ -96,7 +96,7 @@ def analyse_node_type(bn, root, report=False):
     return res
 
 
-def formulate_blueprint(bn, root, random, out):
+def formulate_blueprint(bn, root, random=None, out=None):
     """
     a blueprint of a simulation model based on given a Bayesian network.
     It describes every node in the network as 1) fixed variable, 2) random variable, 3) exposed distribution
@@ -143,15 +143,16 @@ class SimulationActor(metaclass=ABCMeta):
 
 
 class CompoundActor(SimulationActor):
-    def __init__(self, field, flow):
+    def __init__(self, field, flow, loci):
         SimulationActor.__init__(self, field)
         self.Flow = list(flow)
+        self.Loci = loci
 
     def sample(self, pas=None):
         pas = dict(pas) if pas else dict()
         for loc in self.Flow:
             pas[loc.Name] = loc.sample(pas)
-        return pas[self.Field]
+        return self.Loci.sample(pas)
 
     def __repr__(self):
         return '{} ({})'.format(self.Field, '->'.join(f.Name for f in self.Flow))
@@ -215,7 +216,7 @@ class ParameterCore(Gene):
             yield k
 
         if self.Parent:
-            actors = self.Parent.ChildActors[self.SG.Name]
+            actors = self.Parent.ChildrenActors[self.SG.Name]
             for k in actors:
                 yield k
 
@@ -226,23 +227,28 @@ class ParameterCore(Gene):
         :return:
         """
         try:
-            return self.Actors[sampler]
+            actor = self.Actors[sampler]
         except KeyError:
             pass
 
         try:
-            return self.Parent.ChildActors[self.SG.Name][sampler]
+            actor = self.Parent.ChildrenActors[self.SG.Name][sampler]
         except AttributeError:
-            raise KeyError('No {} found')
+            raise KeyError('No {} found'.format(sampler))
         except KeyError:
-            raise KeyError('No {} found')
+            raise KeyError('No {} found'.format(sampler))
+
+        def fn():
+            return actor.sample(self)
+
+        return fn
 
     def get_child(self, name):
         return self.Children[name]
 
-    def find_child(self, address):
+    def find_descendant(self, address):
         """
-        Find a child node
+        Find a descendant node
         :param address: str, a series of names of nodes linked with '@'
         :return: a child node in the address
         """
@@ -328,13 +334,13 @@ class SimulationGroup:
         bn = sc.BN
         self.FixedChain = [bn[node] for node in bn.sort(self.BeFixed)]
 
-    def form_actor(self, bn, g, act, pas):
+    def __form_actor(self, bn, g, act, pas):
         pa = set(g.predecessors(act))
         if pa.intersection(self.BeRandom):
             flow = set.intersection(nx.ancestors(g, act), self.BeRandom)
             flow = bn.sort(flow)
             flow = [bn[nod] for nod in flow]
-            return CompoundActor(act, flow)
+            return CompoundActor(act, flow, bn[act])
         elif pa.intersection(self.BeFixed):
             return SingleActor(act, bn[act])
         else:
@@ -345,9 +351,9 @@ class SimulationGroup:
         g = bn.DAG
 
         for act in self.BeActors:
-            yield act, self.form_actor(bn, g, act, pas)
+            yield act, self.__form_actor(bn, g, act, pas)
 
-    def generate(self, nickname, exo, actor=True):
+    def generate(self, nickname, exo):
         pas = dict(exo)
         vs = dict(pas)
         prior = 0
@@ -359,8 +365,6 @@ class SimulationGroup:
         vs = {k: v for k, v in vs.items() if k in self.BeFixed}
 
         pc = ParameterCore(nickname, self, vs, prior)
-        if actor:
-            pc.Actors = dict(self.actors(vs))
         return pc
 
     def set_response(self, imp, fixed, actors, hoist, pc):
@@ -387,22 +391,23 @@ class SimulationGroup:
         if group not in self.Children:
             raise KeyError('No matched group')
 
-        ch_sc = self.SC[group]
-        if self.SC.Hoist:
-            chd = ch_sc.generate(nickname, pa, False)
-            chd.Parent = pa
-            if group not in pa.ChildrenActors:
-                pa.ChildrenActors[group] = dict(self.actors(chd))
-        else:
-            chd = ch_sc.generate(nickname, pa, True)
-            chd.Parent = pa
+        ch_sg = self.SC[group]
+        chd = ch_sg.generate(nickname, pa)
+        chd.Parent = pa
 
+        if self.SC.Hoist and pa:
+            if group not in pa.ChildrenActors:
+                pa.ChildrenActors[group] = dict(ch_sg.actors(chd))
+        else:
+            chd.Actors = dict(ch_sg.actors(chd))
 
         return chd
 
     def __repr__(self):
-        return '{}({}|{}|{}->{})'.format(self.Name,
-                                         self.BeFixed, self.BeRandom, self.BeActors,
+        return '{}({}|{}|{})->{}'.format(self.Name,
+                                         self.BeFixed if self.BeFixed else '.',
+                                         self.BeRandom if self.BeRandom else '.',
+                                         self.BeActors if self.BeActors else '.',
                                          self.Children)
 
     def to_json(self):
@@ -469,122 +474,26 @@ class SimulationCore:
     def __repr__(self):
         return 'Simulation core: {}'.format(self.Name)
 
-'''
-class ParameterCore(Gene):
-    def __init__(self, ds, vs):
-        Gene.__init__(self, vs)
-        self.Distributions = dict(ds)
 
-    def get_distribution(self, d):
-        return self.Distributions[d]
+def as_simulation_core(bn, hie, root=None, random=None, out=None):
+    """
+    a blueprint of a simulation model based on given a Bayesian network.
+    It describes every node in the network as 1) fixed variable, 2) random variable, 3) exposed distribution
+    :param bn: epidag.BayesNet, a Bayesian Network
+    :param hie: hierarical structure of the nodes of bn
+    :param root: name of root group
+    :param random: nodes with random effects within an individual
+    :param out: nodes can be used in simulation model
+    :return: a simulation model
+    """
 
-    def clone(self):
-        g = ParameterCore(self.Distributions, self.Locus)
-        g.LogPrior = self.LogPrior
-        g.LogLikelihood = self.LogLikelihood
-        return g
+    if root is None:
+        for k in hie.keys():
+            if not (any([k in v for v in hie.values()])):
+                root = k
+                break
 
-    def difference(self, other):
-        hyper = list()
-        leaves = list()
+    ng = dag.form_hierarchy(bn, hie, root)
+    bp = formulate_blueprint(bn, ng, random, out)
 
-        for k, v in self.Locus.items():
-            if k in other.Locus:
-                if other.Locus[k] != v:
-                    hyper.append(k)
-
-        for k, v in self.Distributions.items():
-            if k in other.Distributions:
-                if str(other.Distributions[k]) != str(v):
-                    leaves.append(k)
-
-        return hyper, leaves
-
-    def __getitem__(self, item):
-        return self.Distributions[item]
-
-    def __contains__(self, item):
-        return item in self.Distributions
-
-    def get(self, item):
-        try:
-            return self.Locus[item]
-        except KeyError:
-            try:
-                return self.Distributions[item].sample()
-            except KeyError as k:
-                raise k
-
-    def __repr__(self):
-        s = Gene.__repr__(self) + ', '
-        s += ", ".join(['{}~{}'.format(k, v) for k, v in self.Distributions.items()])
-        return s
-
-
-class SimulationModel:
-    def __init__(self, model):
-        self.DAG = model
-
-    @property
-    def Name(self):
-        return self.DAG.Name
-
-    def sample_core(self, cond=None):
-        """
-        Sample a parameter core with prior probability
-        :return: ParemeterCore: a prior parameter core
-        """
-        ds, vs = self.DAG.sample_leaves(need_vs=True, cond=cond)
-        g = ParameterCore(ds, vs)
-        g.LogPrior = self.DAG.evaluate(g)
-        return g
-
-    def mutate(self, pcs):
-        """
-        jitter the value of parameterCore
-        :param pcs: list<ParameterCore>: original parameter cores
-        :return: List<ParameterCore>: mutated pcs
-        """
-        dat = pd.DataFrame.from_records([pc.Locus for pc in pcs])
-        ds = self.DAG.sample_distributions()
-
-        for k in dat:
-            try:
-                di = ds[k]
-                if di.Type is 'Double':
-                    amt = dat[k]
-                    amt = 0.01 * (amt.max() - amt.min())
-                    amt = rd.normal(dat[k], scale=amt, size=len(dat[k]))
-                    amt = np.minimum(np.maximum(amt, di.Lower), di.Upper)
-                    dat[k] = amt
-            except KeyError:
-                continue
-
-        return [self.reform_core(locus) for k, locus in dat.iterrows()]
-
-    def intervene_core(self, pc, intervention):
-        ds, vs = self.DAG.intervene_leaves(intervention, pc.Locus)
-        g = ParameterCore(ds, vs)
-        g.LogPrior = self.DAG.evaluate(g)
-        return g
-
-    def reform_core(self, vs):
-        """
-        Use new table to generate a parameter core
-        :param vs: parameter table
-        :return: ParameterCore: new core
-        """
-        vs = dict(vs)
-        ds = self.DAG.sample_leaves(vs)
-        g = ParameterCore(ds, vs)
-        self.DAG.regularise(g)
-        return g
-
-    def __str__(self):
-        return str(self.DAG)
-
-    __repr__ = __str__
-
-    def to_json(self):
-        return self.DAG.to_json()
-'''
+    return dag.SimulationCore(bn, bp, ng)
