@@ -146,3 +146,14 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
+
+intro.ipynb
+.idea/PyDAG.iml
+.idea/encodings.xml
+.idea/inspectionProfiles/
+.idea/markdown-navigator.xml
+.idea/markdown-navigator/
+.idea/misc.xml
+.idea/modules.xml
+.idea/preferred-vcs.xml
+.idea/

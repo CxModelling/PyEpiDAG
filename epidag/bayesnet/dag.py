@@ -30,7 +30,7 @@ def bn_script_to_json(script):
             pas, fu = dag.parse_parents(p_func)
             all_fu = all_fu.union(fu)
             all_pa = all_pa.union(pas)
-            nodes[p_name] = {'Type': 'Distribution', 'Def': p.group(2), 'Parents': pas}
+            nodes[p_name] = {'Type': 'Distribution', 'Def': p.group(2), 'Parents': list(pas)}
         elif p.find('=') >= 0:
             p = re.match(r'(\w+)\=(\S+)', p, re.IGNORECASE)
             p_name, p_func = p.group(1), p.group(2)
@@ -38,7 +38,7 @@ def bn_script_to_json(script):
             all_fu = all_fu.union(fu)
             all_pa = all_pa.union(pas)
             if len(pas):
-                node = {'Type': 'Function', 'Def': p_func, 'Parents': pas}
+                node = {'Type': 'Function', 'Def': p_func, 'Parents': list(pas)}
             else:
                 node = {'Type': 'Value', 'Def': p_func}
             nodes[p_name] = node
@@ -47,7 +47,7 @@ def bn_script_to_json(script):
         if pa not in nodes:
             nodes[pa] = {'Type': 'ExoValue'}
 
-    js = {'Name': name, 'Nodes': nodes, 'Dependency': all_fu}
+    js = {'Name': name, 'Nodes': nodes, 'Dependency': list(all_fu)}
     return js
 
 
@@ -75,8 +75,8 @@ class BayesianNetwork:
 
         if not nx.is_directed_acyclic_graph(self.DAG):
             raise SyntaxError('Cyclic groups found')
-        if js['Dependency'] > dag.MATH_FUNC.keys():
-            raise SyntaxError('Known functions found')
+        if set(js['Dependency']) > dag.MATH_FUNC.keys():
+            raise SyntaxError('Unknown functions found')
 
         nx.freeze(self.DAG)
         self.ExogenousNodes = [k for k, v in self.DAG.nodes.data() if v['Type'] is 'ExoValue']
@@ -129,9 +129,3 @@ if __name__ == '__main__':
 
     print('\nTo JSON, FROM JSON')
     print(dag1)
-
-    #print(dag1.get_offsprings('y'))
-
-    #sp2 = dag1.shock(sp1, 'y', 10)
-    #print(sp2)
-

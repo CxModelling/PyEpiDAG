@@ -33,11 +33,10 @@ hie = {
     'agB': ['bmiB', 'ageB']
 }
 
-
-# ng = dag.form_hierarchy(bn, hie, root='country')
-# bp = dag.formulate_blueprint(bn, ng, random=['muA'], out=['foodstore', 'bmiA', 'bmiB'])
-sc = dag.as_simulation_core(bn, hie, root='country', random=['muA'], out=['foodstore', 'bmiA', 'bmiB'])
-# sc = dag.SimulationCore(bn, bp, ng)
+sc = dag.as_simulation_core(bn, hie,
+                            root='country',
+                            random=['muA'],
+                            out=['foodstore', 'bmiA', 'bmiB'])
 
 pc = sc.generate('Taiwan', {'sd': 1})
 pc_taipei = pc.breed('Taipei', 'area')

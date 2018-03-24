@@ -417,7 +417,7 @@ class SimulationGroup:
             'BeFixed': list(self.BeFixed),
             'BeRandom': list(self.BeRandom),
             'BeActors': list(self.BeActors),
-            'Children': list(self.Children)
+            'Children': [chd.to_json() for chd in self.Children]
         }
 
 
@@ -480,7 +480,7 @@ def as_simulation_core(bn, hie, root=None, random=None, out=None):
     a blueprint of a simulation model based on given a Bayesian network.
     It describes every node in the network as 1) fixed variable, 2) random variable, 3) exposed distribution
     :param bn: epidag.BayesNet, a Bayesian Network
-    :param hie: hierarical structure of the nodes of bn
+    :param hie: hierarchical structure of the nodes of bn
     :param root: name of root group
     :param random: nodes with random effects within an individual
     :param out: nodes can be used in simulation model
