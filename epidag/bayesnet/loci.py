@@ -35,7 +35,7 @@ class Loci(metaclass=ABCMeta):
         pass
 
     def fill(self, gene):
-        gene[self.Name] = self.sample(gene.Locus)
+        gene[self.Name] = self.sample(gene)
 
     @property
     @abstractmethod

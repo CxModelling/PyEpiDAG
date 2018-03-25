@@ -32,25 +32,31 @@ def bn_script_to_json(script):
             pas, fu = dag.parse_parents(p_func)
             all_fu = all_fu.union(fu)
             all_pa = all_pa.union(pas)
-            nodes[p_name] = {'Type': 'Distribution', 'Def': p.group(2), 'Parents': list(pas)}
+            nodes[p_name] = {'Name': p_name,
+                             'Type': 'Distribution',
+                             'Def': p.group(2), 'Parents': list(pas)}
         elif p.find('=') >= 0:
             p = re.match(r'(\w+)\=(\S+)', p, re.IGNORECASE)
             p_name, p_func = p.group(1), p.group(2)
+            pseudo = p_func.startswith('f(')
             pas, fu = dag.parse_parents(p_func)
-            all_fu = all_fu.union(fu)
+            if not pseudo:
+                all_fu = all_fu.union(fu)
             all_pa = all_pa.union(pas)
-            if len(pas):
+            if not pas:
+                node = {'Type': 'Value', 'Def': p_func}
+            elif pseudo:
                 node = {'Type': 'Function', 'Def': p_func, 'Parents': list(pas)}
             else:
-                node = {'Type': 'Value', 'Def': p_func}
+                node = {'Type': 'Pseudo', 'Def': p_func, 'Parents': list(pas)}
+            node['Name'] = p_name
             nodes[p_name] = node
 
     for pa in all_pa:
         if pa not in nodes:
             nodes[pa] = {'Type': 'ExoValue'}
 
-    js = {'Name': name, 'Nodes': nodes, 'Dependency': list(all_fu)}
-    return js
+    return {'Name': name, 'Nodes': nodes, 'Dependency': list(all_fu)}
 
 
 class BayesianNetwork:
@@ -66,6 +72,8 @@ class BayesianNetwork:
                 loci = dag.ExoValueLoci(k)
             elif v['Type'] is 'Distribution':
                 loci = dag.DistributionLoci(k, v['Def'])
+            elif v['Type'] is 'Pseudo':
+                loci = dag.PseudoLoci(k, v['Def'])
             else:
                 loci = dag.FunctionLoci(k, v['Def'])
 
@@ -112,8 +120,27 @@ class BayesianNetwork:
     __repr__ = __str__
 
 
+def bn_from_script(script):
+    """
+    Build a Bayesian network from script input
+    :param script: multi-line string, script of a Bayesian network
+    :return: BayesianNetwork
+    """
+    js_bn = bn_script_to_json(script)
+    return BayesianNetwork(js_bn)
+
+
+def bn_from_json(js_bn):
+    """
+    Build a Bayesian network from json input
+    :param js: json, json formatted Bayesian network
+    :return: BayesianNetwork
+    """
+    return BayesianNetwork(js_bn)
+
+
 if __name__ == '__main__':
-    scr1 = '''
+    scr = '''
     PCore A {
         w = 1
         x1 = 1/x
@@ -124,10 +151,10 @@ if __name__ == '__main__':
     }
     '''
 
-    js1 = bn_script_to_json(scr1)
-    print(js1)
+    js = bn_script_to_json(scr)
+    print(js)
 
-    dag1 = BayesianNetwork(js1)
+    dag1 = BayesianNetwork(js)
 
-    print('\nTo JSON, FROM JSON')
+    print('\nTo JSON, From JSON')
     print(dag1)
