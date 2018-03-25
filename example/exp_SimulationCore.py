@@ -6,7 +6,7 @@ __author__ = 'TimeWz667'
 scr = '''
 Pcore BMI {
     b0 ~ norm(12, 1)
-    b1 = 0.5
+    b1 = 0.5 # gggg
     pf ~ beta(8, 20)
     foodstore ~ binom(100, pf)
     b0r ~ norm(0, .01)
@@ -23,6 +23,7 @@ Pcore BMI {
 '''
 
 bj = dag.bn_script_to_json(scr)
+print(bj)
 bn = dag.BayesianNetwork(bj)
 
 

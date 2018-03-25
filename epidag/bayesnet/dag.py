@@ -10,9 +10,11 @@ def bn_script_to_json(script):
     # remove space
     pars = script.replace(' ', '')
     pars = pars.replace('\t', '')
+
     # split lines
     pars = pars.split('\n')
-    pars = [par for par in pars if par != '']
+    pars = [par.split('#')[0] for par in pars if par != '']
+
 
     try:
         name = re.match(r'PCore\s*(?P<name>\w+)\s*\{', pars[0], re.IGNORECASE).group('name')

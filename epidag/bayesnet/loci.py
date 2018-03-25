@@ -20,6 +20,9 @@ def parse_parents(seq):
 
 
 class Loci(metaclass=ABCMeta):
+    def __init__(self, name):
+        self.Name = name
+
     def __call__(self, parent=None):
         return self.sample(parent)
 
@@ -31,28 +34,36 @@ class Loci(metaclass=ABCMeta):
     def evaluate(self, parent=None):
         pass
 
-    @abstractmethod
     def fill(self, gene):
-        pass
+        gene[self.Name] = self.sample(gene.Locus)
 
     @property
     @abstractmethod
     def Parents(self):
         pass
 
+    @property
+    @abstractmethod
+    def Definition(self):
+        pass
+
     @abstractmethod
     def to_json(self):
-        pass
+        return {'Name': self.Name, 'Def': self.Definition}
 
 
 class ValueLoci(Loci):
     def __init__(self, name, val):
-        self.Name = name
+        Loci.__init__(self, name)
         self.Value = eval(val, MATH_FUNC) if isinstance(val, str) else val
 
     @property
     def Parents(self):
         return list()
+
+    @property
+    def Definition(self):
+        return self.Value
 
     def sample(self, pas=None):
         return self.Value
@@ -60,11 +71,10 @@ class ValueLoci(Loci):
     def evaluate(self, pas=None):
         return 0
 
-    def fill(self, gene):
-        gene[self.Name] = self.sample(gene.Locus)
-
     def to_json(self):
-        return {'Type': 'Value', 'Def': self.Value}
+        js = Loci.to_json(self)
+        js['Type'] = 'Value'
+        return js
 
     def __repr__(self):
         return '{} = {}'.format(self.Name, self.Value)
@@ -74,23 +84,29 @@ class ValueLoci(Loci):
 
 class ExoValueLoci(Loci):
     def __init__(self, name):
-        self.Name = name
+        Loci.__init__(self, name)
 
     @property
     def Parents(self):
         return set()
 
+    @property
+    def Definition(self):
+        return ''
+
     def sample(self, pas=None):
-        return pas[self.Name]
+        try:
+            return pas[self.Name]
+        except TypeError:
+            raise KeyError('Must have input value')
+        except KeyError:
+            raise KeyError('Exogenous variable not found')
 
     def evaluate(self, pas=None):
         return 0
 
-    def fill(self, gene):
-        gene[self.Name] = self.sample(gene.Locus)
-
     def to_json(self):
-        return {'Type': 'ExoValue'}
+        return {'Name': self.Name, 'Type': 'ExoValue'}
 
     def __repr__(self):
         return self.Name
@@ -100,7 +116,7 @@ class ExoValueLoci(Loci):
 
 class DistributionLoci(Loci):
     def __init__(self, name, val, pas=None):
-        self.Name = name
+        Loci.__init__(self, name)
         self.Func = val
         if pas:
             self.Parent = pas
@@ -110,6 +126,10 @@ class DistributionLoci(Loci):
     @property
     def Parents(self):
         return self.Parent
+
+    @property
+    def Definition(self):
+        return self.Func
 
     def get_distribution(self, pas):
         try:
@@ -128,7 +148,10 @@ class DistributionLoci(Loci):
         return self.get_distribution(pas).logpdf(pas[self.Name])
 
     def to_json(self):
-        return {'Type': 'Distribution', 'Def': self.Func, 'Parents': self.Parents}
+        js = Loci.to_json(self)
+        js['Type'] = 'Distribution'
+        js['Parents'] = list(self.Parents)
+        return js
 
     def __repr__(self):
         return '{} ~ {}'.format(self.Name, self.Func)
@@ -138,7 +161,7 @@ class DistributionLoci(Loci):
 
 class FunctionLoci(Loci):
     def __init__(self, name, val, pas=None):
-        self.Name = name
+        Loci.__init__(self, name)
         self.Func = val
         if pas:
             self.Parent = pas
@@ -149,20 +172,25 @@ class FunctionLoci(Loci):
     def Parents(self):
         return self.Parent
 
+    @property
+    def Definition(self):
+        return self.Func
+
     def sample(self, pas=None):
+        pas = dict(pas) if pas else dict()
         try:
             return eval(self.Func, MATH_FUNC, pas)
         except NameError:
-            return eval(self.Func, MATH_FUNC, dict(pas) if pas else dict())
+            raise KeyError('Parent node not found')
 
     def evaluate(self, pas=None):
         return 0
 
-    def fill(self, gene):
-        gene[self.Name] = self.sample(gene.Locus)
-
     def to_json(self):
-        return {'Type': 'Function', 'Def': self.Func, 'Parents': self.Parents}
+        js = Loci.to_json(self)
+        js['Type'] = 'Function'
+        js['Parents'] = list(self.Parents)
+        return js
 
     def __repr__(self):
         return '{} = {}'.format(self.Name, self.Func)
@@ -172,8 +200,8 @@ class FunctionLoci(Loci):
 
 class PseudoLoci(Loci):
     def __init__(self, name, val, pas=None):
-        self.Name = name
-        self.Func = val
+        Loci.__init__(self, name)
+
         if pas:
             self.Parent = pas
         else:
@@ -183,6 +211,10 @@ class PseudoLoci(Loci):
     @property
     def Parents(self):
         return self.Parent
+
+    @property
+    def Definition(self):
+        return self.Func
 
     def sample(self, pas=None):
         raise AttributeError('Pseudo node can not be implemented')
@@ -194,7 +226,10 @@ class PseudoLoci(Loci):
         raise AttributeError('Pseudo node can not be implemented')
 
     def to_json(self):
-        return {'Type': 'Pseudo', 'Def': self.Func, 'Parents': self.Parents}
+        js = Loci.to_json(self)
+        js['Type'] = 'Pseudo'
+        js['Parents'] = list(self.Parents)
+        return js
 
     def __repr__(self):
         return '{} = {}'.format(self.Name, self.Func)
@@ -220,4 +255,3 @@ if __name__ == '__main__':
     print(d3.Parents)
     print(d3.Func)
     print(d3.to_json())
-
