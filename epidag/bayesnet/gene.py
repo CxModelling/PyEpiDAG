@@ -31,6 +31,13 @@ class Gene:
     def __repr__(self):
         return ", ".join([('{}: {:g}' if isinstance(v, float) else '{}: {}').format(k, v) for k, v in self.Locus.items()])
 
+    def to_json(self):
+        return {
+            'Locus': self.Locus,
+            'LogPrior': self.LogPrior,
+            'LogLikelihood': self.LogLikelihood
+        }
+
     @property
     def LogPosterior(self):
         return self.LogPrior + self.LogLikelihood

@@ -98,7 +98,25 @@ class NodeGroup:
             chd.print(i + 1)
 
 
-def form_hierarchy(bn, hie=None, root='root'):
+def divide(xs, key):
+    tr, fa = list(), list()
+    for x in xs:
+        if key(x):
+            tr.append(x)
+        else:
+            fa.append(x)
+    return tr, fa
+
+
+def define_node(k, links):
+    chd, node = divide(links[k], lambda x: x in links)
+    curr = NodeGroup(k, node)
+    for ch in chd:
+        curr.append_chd(define_node(ch, links))
+    return curr
+
+
+def form_hierarchy(bn, hie=None, root=None):
     """
 
     :param bn: epidag.BayesNet, a Bayesian Network
@@ -108,21 +126,14 @@ def form_hierarchy(bn, hie=None, root='root'):
     """
     g = bn.DAG
 
-    def divide(xs, key):
-        tr, fa = list(), list()
-        for x in xs:
-            if key(x):
-                tr.append(x)
-            else:
-                fa.append(x)
-        return tr, fa
-
-    def define_node(k, links):
-        chd, node = divide(links[k], lambda x: x in links)
-        curr = NodeGroup(k, node)
-        for ch in chd:
-            curr.append_chd(define_node(ch, links))
-        return curr
+    if not root:
+        if hie:
+            for k in hie.keys():
+                if not (any([k in v for v in hie.values()])):
+                    root = k
+                    break
+        else:
+            root = 'root'
 
     # check order
     if isinstance(hie, dict):

@@ -4,56 +4,8 @@ from abc import ABCMeta, abstractmethod
 import networkx as nx
 
 
-__all__ = ['sample', 'sample_minimally', 'as_simulation_core',
+__all__ = ['as_simulation_core',
            'analyse_node_type', 'formulate_blueprint', 'SimulationCore']
-
-
-def sample(bn, cond=None):
-    g = bn.DAG
-    cond = cond if cond else dict()
-    if any(nod not in cond for nod in bn.ExogenousNodes):
-        raise ValueError('Exogenous nodes do not fully defined')
-
-    res = dict(cond)
-
-    for nod in bn.OrderedNodes:
-        if nod not in res:
-            res[nod] = g.nodes[nod]['loci'].sample(res)
-    return res
-
-
-def sample_minimally(bn, included, cond=None, sources=False):
-    """
-    sample variables which are minimal requirements of having included
-    :param bn: a Bayesian Network
-    :param included: iterable, targeted output variables
-    :param cond: dict, given variables
-    :param sources: True if mediators needed
-    :return:
-    """
-    g = bn.DAG
-
-    cond = cond if cond else dict()
-    given = list(cond.keys())
-
-    suf = dag.get_sufficient_nodes(g, included, given)
-    suf_exo = [nod for nod in bn.ExogenousNodes if nod in suf]
-
-    for nod in suf_exo:
-        if nod not in cond:
-            raise ValueError('Exogenous node {} does not found'.format(nod))
-
-    res = dict(cond)
-
-    for nod in bn.OrderedNodes:
-        if nod in suf and nod not in res:
-            res[nod] = g.nodes[nod]['loci'].sample(res)
-    sinks = {k: v for k, v in res.items() if k in included}
-    if sources:
-        med = {k: v for k, v in res.items() if k not in included}
-        return sinks, med
-    else:
-        return sinks
 
 
 def analyse_node_type(bn, root, report=False):
@@ -229,14 +181,12 @@ class ParameterCore(Gene):
         try:
             actor = self.Actors[sampler]
         except KeyError:
-            pass
-
-        try:
-            actor = self.Parent.ChildrenActors[self.SG.Name][sampler]
-        except AttributeError:
-            raise KeyError('No {} found'.format(sampler))
-        except KeyError:
-            raise KeyError('No {} found'.format(sampler))
+            try:
+                actor = self.Parent.ChildrenActors[self.SG.Name][sampler]
+            except AttributeError:
+                raise KeyError('No {} found'.format(sampler))
+            except KeyError:
+                raise KeyError('No {} found'.format(sampler))
 
         def fn():
             return actor.sample(self)
@@ -304,13 +254,6 @@ class ParameterCore(Gene):
         for v in self.Locus.items():
             yield v
 
-    def to_json(self):
-        return {
-            'Locus': self.Locus,
-            'LogPrior': self.LogPrior,
-            'LogLikelihood': self.LogLikelihood
-        }
-
     def deep_print(self, i=0):
         prefix = '--' * i + ' ' if i else ''
         print('{}{} ({})'.format(prefix, self.Nickname, self))
@@ -354,6 +297,12 @@ class SimulationGroup:
             yield act, self.__form_actor(bn, g, act, pas)
 
     def generate(self, nickname, exo):
+        """
+        Generate a simulation core with a nickname
+        :param nickname: nickname of the gerneated core
+        :param exo: dict, input exogenous variables
+        :return:
+        """
         pas = dict(exo)
         vs = dict(pas)
         prior = 0
@@ -365,6 +314,8 @@ class SimulationGroup:
         vs = {k: v for k, v in vs.items() if k in self.BeFixed}
 
         pc = ParameterCore(nickname, self, vs, prior)
+        pc.Actors = dict(self.actors(pc))
+
         return pc
 
     def set_response(self, imp, fixed, actors, hoist, pc):
@@ -461,7 +412,13 @@ class SimulationCore:
         except KeyError:
             raise KeyError('Unknown group')
 
-    def generate(self, nickname, exo):
+    def generate(self, nickname, exo=None):
+        """
+
+        :param nickname: nickname of generated parameter
+        :param exo: dict, exogenous variables
+        :return:
+        """
         exo = exo if exo else dict()
         return self.SGs[self.RootSG].generate(nickname, exo)
 
@@ -475,7 +432,7 @@ class SimulationCore:
         return 'Simulation core: {}'.format(self.Name)
 
 
-def as_simulation_core(bn, hie, root=None, random=None, out=None):
+def as_simulation_core(bn, hie=None, root=None, random=None, out=None):
     """
     a blueprint of a simulation model based on given a Bayesian network.
     It describes every node in the network as 1) fixed variable, 2) random variable, 3) exposed distribution
@@ -486,12 +443,6 @@ def as_simulation_core(bn, hie, root=None, random=None, out=None):
     :param out: nodes can be used in simulation model
     :return: a simulation model
     """
-
-    if root is None:
-        for k in hie.keys():
-            if not (any([k in v for v in hie.values()])):
-                root = k
-                break
 
     ng = dag.form_hierarchy(bn, hie, root)
     bp = formulate_blueprint(bn, ng, random, out)
