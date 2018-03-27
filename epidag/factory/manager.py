@@ -1,4 +1,4 @@
-from epidag.factory.util import parse_function
+from epidag.util import parse_function
 from epidag.factory.arguments import ValidationError
 
 __author__ = 'TimeWz667'
@@ -13,7 +13,7 @@ class Creator:
 
     def get_form(self, resource=None):
         return {
-            'Name': self.Name,
+            'Type': self.Name,
             'Args': [arg.to_form(resource) for arg in self.Arguments]
         }
 
@@ -33,42 +33,6 @@ class Creator:
                 return False
             return True
 
-    def align_arguments(self, args, resource=None):
-        """
-
-        :param args: arguments which have been validated
-        :param resource: external resource of arguments
-        :return: arguments which can be used in construction
-        """
-        fil = dict()
-        kwargs = {arg[0]: arg[1] for arg in args if isinstance(arg, tuple)}
-        args = [arg for arg in args if not isinstance(arg, tuple)]
-        for arg, vld in zip(args, self.Arguments):
-            try:
-                vld(arg, resource)
-            except ValidationError:
-                return False
-            except KeyError:
-                if not vld.Optional:
-                    return False
-                else:
-                    continue
-            fil[vld.Name] = arg
-        for vld in self.Arguments[len(args):]:
-            name = vld.Name
-            try:
-                value = kwargs[name]
-                vld(value, resource)
-            except ValidationError:
-                return False
-            except KeyError:
-                if not vld.Optional:
-                    return False
-                else:
-                    continue
-            fil[name] = value
-        return fil
-
     def reform_arguments(self, args, resource=None):
         """
 
@@ -87,6 +51,31 @@ class Creator:
                     raise ValueError
                 else:
                     continue
+        return fil
+
+    def sort_function_arguments(self, bp, resource):
+        fil = dict()
+        for i, arg in enumerate(bp['Args']):
+            try:
+                key = arg['key']
+            except KeyError:
+                arg['key'] = key = self.Arguments[i].Name
+            fil[key] = arg['value']
+
+        for vld in self.Arguments:
+            name = vld.Name
+            try:
+                value = fil[name]
+                vld(value, resource)
+            except ValidationError:
+                return False
+            except KeyError:
+                if not vld.Optional:
+                    return False
+                else:
+                    continue
+            fil[name] = value
+
         return fil
 
 
@@ -150,16 +139,18 @@ class Workshop:
             pass
         return res
 
-    def parse(self, name, fn=None, env=None, loc=None, js=True):
+    def parse(self, name, fn=None, env=None, loc=None, js=True, modify=False):
         if not fn:
             fn = name
-        f, pars = parse_function(fn, env=env, loc=loc)
-        creator = self.Creators[f]
-        pars = creator.align_arguments(pars, self.Resources)
+        bp = parse_function(fn).to_blueprint(name, loc, env)
+        creator = self.Creators[bp['Type']]
+        pars = creator.sort_function_arguments(bp, self.Resources)
+        if modify:
+            pars = creator.reform_arguments(pars, self.Resources)
         res = creator.create(name, pars)
         if js:
             try:
-                res.json = {'Name': name, 'Args': pars}
+                res.json = bp
             except AttributeError:
                 pass
         return res

@@ -78,9 +78,9 @@ class MathExpress:
         self.Var = var
         self.Func = func
 
-    def __call__(self, loc=None):
+    def __call__(self, loc=None, glo=None):
         try:
-            return eval(self.Express, loc)
+            return eval(self.Express, loc, glo)
         except NameError:
             return self.Express
 
@@ -119,9 +119,25 @@ class ParsedFunction:
             args[key] = arg
         self.Arguments = [args[key] for key in order if key in args]
 
-    def to_json(self, loc=None):
+    def get_arguments(self, loc=None, glo=None):
+        args = list()
+        for arg in self.Arguments:
+            # todo opti
+            arg = dict(arg)
+            arg['value'] = arg['value'](loc, glo)
+            args.append(arg)
+        return args
+
+    def to_blueprint(self, name, loc=None, glo=None):
         return {
-            'Name': self.Source,
+            'Name': name,
+            'Type': self.Function,
+            'Args': self.get_arguments(loc, glo)
+        }
+
+    def to_json(self, loc=None, name=None):
+        return {
+            'Source': self.Source,
             'Type': self.Function,
             'Args': [arg['value'](loc) for arg in self.Arguments]
         }
