@@ -144,7 +144,10 @@ class Workshop:
         name = js['Name']
         args = js['Args']
         res = self.Creators[js['Type']].create(name, args)
-        res.json = js
+        try:
+            res.json = js
+        except AttributeError:
+            pass
         return res
 
     def parse(self, name, fn=None, env=None, loc=None, js=True):

@@ -4,7 +4,7 @@ __author__ = 'TimeWz667'
 
 
 def parse_function(fn, env=None, loc=None):
-    # todo check
+    # todo to use ast
     fn = fn.replace(' ', '')
     mat = re.match(r'(\w+)\((\S+)\)', fn)
     if mat is None:

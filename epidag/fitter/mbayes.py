@@ -89,7 +89,7 @@ if __name__ == '__main__':
     }
     '''
 
-    dag1 = DirectedAcyclicGraph(pars)
+    dag1 = BayesianNetwork(pars)
 
     print(dag1)
     print('Sampling')

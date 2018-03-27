@@ -1,7 +1,7 @@
 import networkx as nx
 
 __author__ = 'TimeWz667'
-__all__ = ['get_sufficient_nodes', 'form_hierarchy']
+__all__ = ['get_sufficient_nodes', 'form_hierarchy', 'formulate_blueprint', 'analyse_node_type']
 
 
 def get_sufficient_nodes(g, included, given):
@@ -126,21 +126,16 @@ def form_hierarchy(bn, hie=None, root=None):
     """
     g = bn.DAG
 
-    if not root:
-        if hie:
+    if isinstance(hie, dict):
+        if not root:
             for k in hie.keys():
                 if not (any([k in v for v in hie.values()])):
                     root = k
                     break
-        else:
-            root = 'root'
-
-    # check order
-    if isinstance(hie, dict):
         root = define_node(root, hie)
 
     elif isinstance(hie, list):
-        root = NodeGroup(root, hie[0])
+        root = NodeGroup('root', hie[0])
         ng1 = root
         for i, hi in enumerate(hie[1:], 2):
             ng0, ng1 = ng1, NodeGroup('Layer {}'.format(i), hi)
@@ -167,3 +162,80 @@ def form_hierarchy(bn, hie=None, root=None):
         root.raise_up(nod, g)
 
     return root
+
+
+def analyse_node_type(bn, root, report=False):
+    """
+    Analyse nodes in each group based on their potential characteristics.
+    A node which can be an actor must be a leaf of the given DAG.
+    A node which can carry stochastic effects must not be an ancestor of nodes in lower models.
+
+    :param bn: epidag.BayesNet, a Bayesian Network
+    :param root: root node group
+    :param report: True if report print needed
+    :return: dict, key = Group name, value = (Should be fixed, Can be random, Can be actors)
+    """
+    g = bn.DAG
+    leaves = bn.LeafNodes
+
+    res = dict()
+
+    def fn(ng, ind=0):
+        fix, ran, act = list(), list(), list()
+        for node in ng.Nodes:
+            if node in leaves:
+                act.append(node)
+            elif nx.descendants(g, node) < ng.Nodes:
+                ran.append(node)
+            else:
+                fix.append(node)
+
+        res[ng.Name] = fix, ran, act
+        if report:
+            print('{}Group {}'.format('--' * ind, ng.Name))
+            print('{}Must be fixed: {}'.format('  ' * ind, fix))
+            print('{}Can be random: {}'.format('  ' * ind, ran))
+            print('{}Can be actors: {}'.format('  ' * ind, act))
+
+        for chd in ng.Children:
+            fn(chd, ind + 1)
+
+    fn(root)
+    return res
+
+
+def formulate_blueprint(bn, root, random=None, out=None):
+    """
+    a blueprint of a simulation model based on given a Bayesian network.
+    It describes every node in the network as 1) fixed variable, 2) random variable, 3) exposed distribution
+    :param bn: epidag.BayesNet, a Bayesian Network
+    :param root: root node group
+    :param random: nodes with random effects within an individual
+    :param out: nodes can be used in simulation model
+    :return: a blueprint of simulation model
+    """
+    suggest = analyse_node_type(bn, root, report=False)
+    random = random if random else list()
+    out = out if out else set.union(*[set(act) for (_, _, act) in suggest.values()])
+    out = [o for o in out if o not in random]
+
+    approved = dict()
+    for k, (fs, rs, cs) in suggest.items():
+        afs = list(fs)
+
+        ars = list()
+        for r in rs:
+            (ars if r in random else afs).append(r)
+
+        acs = list()
+        for c in cs:
+            if c in out:
+                acs.append(c)
+            elif c in random:
+                ars.append(c)
+            else:
+                afs.append(c)
+
+        approved[k] = afs, ars, acs
+    # todo detect unwilling changes
+    return approved

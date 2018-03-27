@@ -1,22 +1,9 @@
 from abc import ABCMeta, abstractmethod
-from epidag.bayesnet import parse_distribution, MATH_FUNC
-import ast
+from epidag import MATH_FUNC, parse_parents
+from .distribution import parse_distribution
 
 __author__ = 'TimeWz667'
-__all__ = ['ValueLoci', 'ExoValueLoci', 'DistributionLoci', 'FunctionLoci', 'PseudoLoci',
-           'parse_parents']
-
-
-def parse_parents(seq):
-    sen = ast.parse(seq)
-    v, f = set(), set()
-
-    for s in ast.walk(sen):
-        if isinstance(s, ast.Name):
-            v.add(s.id)
-        elif isinstance(s, ast.Call):
-            f.add(s.func.id)
-    return v - f, f
+__all__ = ['ValueLoci', 'ExoValueLoci', 'DistributionLoci', 'FunctionLoci', 'PseudoLoci']
 
 
 class Loci(metaclass=ABCMeta):
