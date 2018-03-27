@@ -78,7 +78,7 @@ class MathExpress:
         self.Var = var
         self.Func = func
 
-    def __call__(self, loc):
+    def __call__(self, loc=None):
         try:
             return eval(self.Express, loc)
         except NameError:
@@ -177,4 +177,6 @@ if __name__ == '__main__':
     print(fn.to_json({'k': 7}))
     print(fn.to_json({'k': 7, 'a': 10}))
     fn.sort_arguments(['1', '2', '3', 's', 't'])
-    print(fn.to_json())
+    print(fn.to_json(), '\n')
+
+    print(resample([0, -1.2, -1], ['a', 'b', 'c']))
