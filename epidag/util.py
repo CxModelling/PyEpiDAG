@@ -74,9 +74,9 @@ def parse_parents(seq):
     return find_ast_parents(ast.parse(seq))
 
 
-class MathExpress:
+class MathExpression:
     def __init__(self, eq, var, func):
-        self.Express = eq
+        self.Expression = eq
         self.Var = var
         self.Func = func
 
@@ -84,29 +84,29 @@ class MathExpress:
         try:
             return self.execute(loc, glo)
         except NameError:
-            return self.Express
+            return self.Expression
 
     def execute(self, loc=None, glo=None):
-        return eval(self.Express, loc, glo)
+        return eval(self.Expression, loc, glo)
 
     def is_executable(self, loc):
         return all(v in loc for v in self.Var) and all(f in MATH_FUNC for f in self.Func)
 
     def __str__(self):
-        return self.Express
+        return self.Expression
 
     __repr__ = __str__
 
 
 def parse_math_express(seq):
     v, f = parse_parents(seq)
-    return MathExpress(seq, v, f)
+    return MathExpression(seq, v, f)
 
 
 def ast_to_math_express(seq_ast, seq=None):
     v, f = find_ast_parents(seq_ast)
     seq = seq if seq else astunparse.unparse(seq_ast)[:-1]
-    return MathExpress(seq, v, f)
+    return MathExpression(seq, v, f)
 
 
 class ParsedFunction:

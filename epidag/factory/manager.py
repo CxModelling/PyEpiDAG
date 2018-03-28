@@ -139,12 +139,41 @@ class Workshop:
             pass
         return res
 
-    def parse(self, name, fn=None, env=None, loc=None, js=True, modify=False):
-        if not fn:
-            fn = name
-        bp = parse_function(fn).to_blueprint(name, loc, env)
+    def sort_function_arguments(self, fn):
+        """
+        Sort argument list of a ParsedFunction
+        :param fn: ParsedFunction
+        :raise: KeyError if any required variable lost
+        """
+        vlds = self.Creators[fn.Function].Arguments
+        args = dict()
+        for i, arg in enumerate(fn.Arguments):
+            try:
+                key = arg['key']
+            except KeyError:
+                arg['key'] = key = vlds[i]
+            args[key] = arg
+
+        fn.Arguments = list()
+        for vld in vlds:
+            try:
+                fn.Arguments.append(args[vld.Name])
+            except KeyError:
+                if not vld.Optional:
+                    raise KeyError('Field {} is required'.format(vld.Name))
+
+    def from_function(self, name, fn, env=None, loc=None, js=True, modify=False, sort=False):
+        bp = fn.to_blueprint(name, loc, env)
         creator = self.Creators[bp['Type']]
-        pars = creator.sort_function_arguments(bp, self.Resources)
+        if sort:
+            pars = creator.sort_function_arguments(bp, self.Resources)  # todo
+        elif isinstance(bp['Args'], list):
+            try:
+                pars = {arg['key']: arg['value'] for arg in bp['Args']}
+            except KeyError:
+                raise SyntaxError
+        else:
+            pars = bp['Args']
         if modify:
             pars = creator.reform_arguments(pars, self.Resources)
         res = creator.create(name, pars)
@@ -154,6 +183,11 @@ class Workshop:
             except AttributeError:
                 pass
         return res
+
+    def parse(self, name, fn=None, env=None, loc=None, js=True, modify=False):
+        if not fn:
+            fn = name
+        return self.from_function(name, parse_function(fn), env, loc, js, modify, True)
 
     def get_form(self, tp):
         return self.Creators[tp].get_form(self.Resources)

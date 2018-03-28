@@ -119,10 +119,7 @@ class DistributionLoci(Loci):
         return self.Func
 
     def get_distribution(self, pas):
-        try:
-            pas = dict(pas)
-        except TypeError:
-            pas = dict()
+        pas = dict(pas) if pas else dict()
         return parse_distribution(self.Func, glo=MATH_FUNC, loc=pas)
 
     def sample(self, pas=None):

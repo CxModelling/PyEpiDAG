@@ -5,9 +5,11 @@ import numpy.random as rd
 from abc import ABCMeta, abstractmethod
 from epidag.factory import get_workshop
 import epidag.factory.arguments as vld
+from epidag.util import parse_function
 
 __author__ = 'TimeWz667'
-__all__ = ['AbsDistribution', 'SpDouble', 'SpInteger', 'DistributionCentre', 'parse_distribution']
+__all__ = ['AbsDistribution', 'SpDouble', 'SpInteger', 'DistributionCentre',
+           'parse_distribution', 'parse_distribution_function', 'execute_distribution']
 
 
 class AbsDistribution(metaclass=ABCMeta):
@@ -324,6 +326,18 @@ DistributionCentre.register('cat', CategoricalRV, [vld.ProbTab('kv')])
 
 def parse_distribution(name, di=None, glo=None, loc=None):
     return DistributionCentre.parse(name, di, env=glo, loc=loc)
+
+
+def parse_distribution_function(fn):
+    fn = parse_function(fn)
+    DistributionCentre.sort_function_arguments(fn)
+    return fn
+
+
+def execute_distribution(name, fn=None, glo=None, loc=None):
+    if not fn:
+        name, fn = name.Source, name
+    return DistributionCentre.from_function(name, fn, env=glo, loc=loc)
 
 
 if __name__ == '__main__':
