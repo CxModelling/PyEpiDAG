@@ -76,29 +76,29 @@ class ParameterCore(Gene):
             sel = sel.get_child(name)
         return sel
 
-    def impulse(self, imp, shocked=None):
+    def impulse(self, imp):
         """
         Do interventions
         :param imp: dict, intervention
-        :param shocked: Do not manually input
         """
-        imp = dict(imp)
-        if shocked is None:
-            g = self.SG.SC.BN.DAG
-            shocked = set.union(*[set(nx.descendants(g, k)) for k in imp.keys()])
+        g = self.SG.SC.BN.DAG
+        shocked = set.union(*[set(nx.descendants(g, k)) for k in imp.keys()])
+        print(shocked)
+        shocked.difference_update(imp.keys())
+        print(shocked)
+        self.__set_response(imp, shocked)
 
+    def __set_response(self, imp, shocked):
         shocked_locus = [s for s in shocked if s in self.Locus]
         shocked_actors = [k for k, v in self.Actors.items() if k in shocked and isinstance(v, FrozenSingleActor)]
-
         shocked_hoist = dict()
         for k, v in self.ChildrenActors.items():
             shocked_hoist[k] = [s for s, t in v.items() if s in shocked and isinstance(v, FrozenSingleActor)]
-
-        if imp or shocked_locus or shocked_actors or shocked_hoist:
-            self.SG.set_response(imp, shocked_locus, shocked_actors, shocked_hoist, self)
+        # print(shocked_locus, shocked_actors, shocked_hoist)
+        self.SG.set_response(imp, shocked_locus, shocked_actors, shocked_hoist, self)
 
         for v in self.Children.values():
-            v.impulse(imp, shocked)
+            v.__set_response(imp, shocked)
 
     def reset_sc(self, sc):
         self.SG = sc[self.SG.Name]
@@ -120,8 +120,23 @@ class ParameterCore(Gene):
         for v in self.Locus.items():
             yield v
 
+    def __getitem__(self, item):
+        try:
+            return Gene.__getitem__(self, item)
+        except KeyError:
+            try:
+                self.Parent[item]
+            except AttributeError:
+                raise KeyError('{} not found'.format(item))
+            except KeyError:
+                raise KeyError('{} not found'.format(item))
+
+
     def deep_print(self, i=0):
         prefix = '--' * i + ' ' if i else ''
         print('{}{} ({})'.format(prefix, self.Nickname, self))
         for k, chd in self.Children.items():
             chd.deep_print(i + 1)
+
+    def print(self):
+        print('{} ({})'.format(self.Nickname, self))

@@ -23,6 +23,9 @@ class Gene:
         self.Locus[key] = value
         self.LogPrior = 0
 
+    def __contains__(self, item):
+        return item in self.Locus
+
     def clone(self):
         g = Gene(self.Locus, self.LogPrior)
         g.LogLikelihood = self.LogLikelihood

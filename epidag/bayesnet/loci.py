@@ -116,7 +116,8 @@ class DistributionLoci(Loci):
         return self.Func.Source
 
     def get_distribution(self, pas=None):
-        return execute_distribution(self.Func, loc=pas)
+        loc = {pa: pas[pa] for pa in self.Parents}
+        return execute_distribution(self.Func, loc=loc)
 
     def sample(self, pas=None):
         return self.get_distribution(pas).sample()

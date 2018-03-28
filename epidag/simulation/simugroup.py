@@ -47,15 +47,19 @@ class SimulationGroup:
         :param exo: dict, input exogenous variables
         :return:
         """
+        pc = ParameterCore(nickname, self, dict(), 0)
+        if isinstance(exo, ParameterCore):
+            pc.Parent = exo
+        else:
+            for k, v in exo.items():
+                if k in self.BeFixed:
+                    pc[k] = v
 
-        vs = dict(exo)
         prior = 0
         for loci in self.FixedChain:
-            if loci.Name not in vs:
-                vs[loci.Name] = loci.sample(vs)
-            prior += loci.evaluate(vs)
-
-        pc = ParameterCore(nickname, self, vs, prior)
+            loci.fill(pc)
+            prior += loci.evaluate(pc)
+        pc.LogPrior = prior
         pc.Actors = dict(self.actors(pc))
 
         return pc
@@ -86,7 +90,6 @@ class SimulationGroup:
 
         ch_sg = self.SC[group]
         chd = ch_sg.generate(nickname, pa)
-        chd.Parent = pa
 
         if self.SC.Hoist and pa:
             if group not in pa.ChildrenActors:

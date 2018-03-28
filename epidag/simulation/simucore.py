@@ -51,6 +51,7 @@ class SimulationCore:
         :param exo: dict, exogenous variables
         :return:
         """
+        exo = dict(exo) if exo else dict()
         return self.SGs[self.RootSG].generate(nickname, exo)
 
     def to_json(self):

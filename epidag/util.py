@@ -88,7 +88,7 @@ class MathExpression:
             return self.Expression
 
     def execute(self, loc=None):
-        loc = loc if loc else dict()
+        loc = dict(loc) if loc else dict()
         return eval(self.Expression, MATH_FUNC, loc)
 
     @property
