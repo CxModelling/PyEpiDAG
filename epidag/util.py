@@ -49,7 +49,9 @@ def resample(wts, hs, pars=None, log=True):
         wts -= lse
         sel = choice(size, size, True, np.exp(wts))
     else:
-        wts /= np.sum(wts)
+        lse = np.sum(wts)
+        wts /= lse
+        lse = np.log(lse)
         sel = choice(size, size, True, wts)
     if pars:
         return [hs[i] for i in sel], [pars[i] for i in sel], lse - np.log(size)
@@ -80,9 +82,12 @@ class MathExpress:
 
     def __call__(self, loc=None, glo=None):
         try:
-            return eval(self.Express, loc, glo)
+            return self.execute(loc, glo)
         except NameError:
             return self.Express
+
+    def execute(self, loc=None, glo=None):
+        return eval(self.Express, loc, glo)
 
     def is_executable(self, loc):
         return all(v in loc for v in self.Var) and all(f in MATH_FUNC for f in self.Func)
@@ -97,6 +102,7 @@ def parse_math_express(seq):
     v, f = parse_parents(seq)
     return MathExpress(seq, v, f)
 
+
 def ast_to_math_express(seq_ast, seq=None):
     v, f = find_ast_parents(seq_ast)
     seq = seq if seq else astunparse.unparse(seq_ast)[:-1]
@@ -104,9 +110,9 @@ def ast_to_math_express(seq_ast, seq=None):
 
 
 class ParsedFunction:
-    def __init__(self, src, fn, args):
+    def __init__(self, src, func, args):
         self.Source = src
-        self.Function = fn
+        self.Function = func
         self.Arguments = args
 
     def sort_arguments(self, order):
@@ -124,7 +130,10 @@ class ParsedFunction:
         for arg in self.Arguments:
             # todo opti
             arg = dict(arg)
-            arg['value'] = arg['value'](loc, glo)
+            try:
+                arg['value'] = arg['value'].execute(loc, glo)
+            except NameError:
+                raise NameError("Parent nodes are not fully defined")
             args.append(arg)
         return args
 
@@ -135,7 +144,7 @@ class ParsedFunction:
             'Args': self.get_arguments(loc, glo)
         }
 
-    def to_json(self, loc=None, name=None):
+    def to_json(self, loc=None):
         return {
             'Source': self.Source,
             'Type': self.Function,

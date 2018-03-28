@@ -95,7 +95,7 @@ class ParameterCore(Gene):
         for k, v in self.ChildrenActors.items():
             shocked_hoist[k] = [s for s, t in v.items() if s in shocked and isinstance(v, FrozenSingleActor)]
 
-        if shocked_locus or shocked_actors or shocked_hoist:
+        if imp or shocked_locus or shocked_actors or shocked_hoist:
             self.SG.set_response(imp, shocked_locus, shocked_actors, shocked_hoist, self)
 
         for v in self.Children.values():
@@ -166,19 +166,17 @@ class SimulationGroup:
     def generate(self, nickname, exo):
         """
         Generate a simulation core with a nickname
-        :param nickname: nickname of the gerneated core
+        :param nickname: nickname of the generated core
         :param exo: dict, input exogenous variables
         :return:
         """
-        pas = dict(exo)
-        vs = dict(pas)
+
+        vs = dict(exo)
         prior = 0
         for loci in self.FixedChain:
             if loci.Name not in vs:
                 vs[loci.Name] = loci.sample(vs)
             prior += loci.evaluate(vs)
-
-        vs = {k: v for k, v in vs.items() if k in self.BeFixed}
 
         pc = ParameterCore(nickname, self, vs, prior)
         pc.Actors = dict(self.actors(pc))
@@ -281,7 +279,7 @@ class SimulationCore:
 
     def generate(self, nickname, exo=None):
         """
-
+        Instantiate a simulation model
         :param nickname: nickname of generated parameter
         :param exo: dict, exogenous variables
         :return:
