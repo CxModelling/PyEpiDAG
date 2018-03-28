@@ -9,7 +9,8 @@ import re
 __author__ = 'TimeWz667'
 __all__ = ['add_math_func', 'MATH_FUNC',
            'ScriptException', 'resample',
-           'parse_parents', 'parse_function', 'parse_math_express']
+           'parse_parents', 'parse_math_expression',
+           'parse_function', 'evaluate_function']
 
 
 MATH_FUNC = {
@@ -80,14 +81,19 @@ class MathExpression:
         self.Var = var
         self.Func = func
 
-    def __call__(self, loc=None, glo=None):
+    def __call__(self, loc=None):
         try:
-            return self.execute(loc, glo)
+            return self.execute(loc)
         except NameError:
             return self.Expression
 
-    def execute(self, loc=None, glo=None):
-        return eval(self.Expression, loc, glo)
+    def execute(self, loc=None):
+        loc = loc if loc else dict()
+        return eval(self.Expression, MATH_FUNC, loc)
+
+    @property
+    def Parents(self):
+        return self.Var
 
     def is_executable(self, loc):
         return all(v in loc for v in self.Var) and all(f in MATH_FUNC for f in self.Func)
@@ -98,12 +104,12 @@ class MathExpression:
     __repr__ = __str__
 
 
-def parse_math_express(seq):
+def parse_math_expression(seq):
     v, f = parse_parents(seq)
     return MathExpression(seq, v, f)
 
 
-def ast_to_math_express(seq_ast, seq=None):
+def ast_to_math_expression(seq_ast, seq=None):
     v, f = find_ast_parents(seq_ast)
     seq = seq if seq else astunparse.unparse(seq_ast)[:-1]
     return MathExpression(seq, v, f)
@@ -115,34 +121,28 @@ class ParsedFunction:
         self.Function = func
         self.Arguments = args
 
-    def sort_arguments(self, order):
-        args = dict()
-        for i, arg in enumerate(self.Arguments):
-            try:
-                key = arg['key']
-            except KeyError:
-                arg['key'] = key = order[i]
-            args[key] = arg
-        self.Arguments = [args[key] for key in order if key in args]
-
-    def get_arguments(self, loc=None, glo=None):
+    def get_arguments(self, loc=None):
         args = list()
         for arg in self.Arguments:
             # todo opti
             arg = dict(arg)
             try:
-                arg['value'] = arg['value'].execute(loc, glo)
+                arg['value'] = arg['value'].execute(loc)
             except NameError:
                 raise NameError("Parent nodes are not fully defined")
             args.append(arg)
         return args
 
-    def to_blueprint(self, name, loc=None, glo=None):
+    def to_blueprint(self, name, loc=None):
         return {
             'Name': name,
             'Type': self.Function,
-            'Args': self.get_arguments(loc, glo)
+            'Args': self.get_arguments(loc)
         }
+
+    @property
+    def Parents(self):
+        return set.union(*[arg['value'].Var for arg in self.Arguments])
 
     def to_json(self, loc=None):
         return {
@@ -166,7 +166,7 @@ def parse_function(seq):
 
     f, pars = None, list()
     start = False
-
+    keylock = False
     # extract arguments
     for s in ast.walk(seq_ast):
         if not start and isinstance(s, ast.Name):
@@ -174,16 +174,53 @@ def parse_function(seq):
             start = True
         elif start:
             try:
-                if isinstance(s, ast.keyword):
+                if isinstance(s, ast.Load):
+                    break
+                elif isinstance(s, ast.keyword):
                     pars.append({
                         'key': s.arg,
-                        'value': ast_to_math_express(s.value)
+                        'value': ast_to_math_expression(s.value)
                     })
-                else:
-                    pars.append({'value': ast_to_math_express(s)})
+                    keylock = True
+                elif not keylock:
+                    pars.append({'value': ast_to_math_expression(s)})
+
             except AttributeError:
-                break
+                pass
     return ParsedFunction(seq, f, pars)
+
+
+class EvaluatedFunction:
+    def __init__(self, src, func, args):
+        self.Source = src
+        self.Function = func
+        self.Arguments = args
+
+    def to_blueprint(self, name):
+        return {
+            'Name': name,
+            'Type': self.Function,
+            'Args': self.Arguments
+        }
+
+    def to_json(self):
+        return {
+            'Source': self.Source,
+            'Type': self.Function,
+            'Args': [arg['value'] for arg in self.Arguments]
+        }
+
+    def __str__(self):
+        return self.Source
+
+    __repr__ = __str__
+
+
+def evaluate_function(pf: ParsedFunction, loc=None):
+    args = pf.get_arguments(loc)
+    src_arg = [('{}={}'.format(arg['key'], arg['value']) if 'key' in arg else str(arg['value'])) for arg in args]
+    src = '{}({})'.format(pf.Function, ', '.join(src_arg))
+    return EvaluatedFunction(pf.Source, pf.Function, args)
 
 
 if __name__ == '__main__':
@@ -201,7 +238,8 @@ if __name__ == '__main__':
     print(fn.to_json())
     print(fn.to_json({'k': 7}))
     print(fn.to_json({'k': 7, 'a': 10}))
-    fn.sort_arguments(['1', '2', '3', 's', 't'])
+
+    fn = evaluate_function(fn, {'k': 7, 'a': 10})
     print(fn.to_json(), '\n')
 
     print(resample([0, -1.2, -1], ['a', 'b', 'c']))

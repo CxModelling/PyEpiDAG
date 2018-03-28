@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
-from epidag import MATH_FUNC, parse_parents
-from .distribution import parse_distribution
+from epidag import MATH_FUNC, parse_math_expression, parse_function
+from .distribution import parse_distribution_function, execute_distribution
 
 __author__ = 'TimeWz667'
 __all__ = ['ValueLoci', 'ExoValueLoci', 'DistributionLoci', 'FunctionLoci', 'PseudoLoci']
@@ -104,23 +104,19 @@ class ExoValueLoci(Loci):
 class DistributionLoci(Loci):
     def __init__(self, name, val, pas=None):
         Loci.__init__(self, name)
-        self.Func = val
-        if pas:
-            self.Parent = pas
-        else:
-            self.Parent, _ = parse_parents(val)
+        self.Func = parse_distribution_function(val)
+        self.__parents = pas if pas else self.Func.Parents
 
     @property
     def Parents(self):
-        return self.Parent
+        return self.__parents
 
     @property
     def Definition(self):
-        return self.Func
+        return self.Func.Source
 
-    def get_distribution(self, pas):
-        pas = dict(pas) if pas else dict()
-        return parse_distribution(self.Func, glo=MATH_FUNC, loc=pas)
+    def get_distribution(self, pas=None):
+        return execute_distribution(self.Func, loc=pas)
 
     def sample(self, pas=None):
         return self.get_distribution(pas).sample()
@@ -146,24 +142,20 @@ class DistributionLoci(Loci):
 class FunctionLoci(Loci):
     def __init__(self, name, val, pas=None):
         Loci.__init__(self, name)
-        self.Func = val
-        if pas:
-            self.Parent = pas
-        else:
-            self.Parent, _ = parse_parents(val)
+        self.Func = parse_math_expression(val)
+        self.__parents = pas if pas else self.Func.Parents
 
     @property
     def Parents(self):
-        return self.Parent
+        return self.__parents
 
     @property
     def Definition(self):
-        return self.Func
+        return self.Func.Expression
 
     def sample(self, pas=None):
-        pas = dict(pas) if pas else dict()
         try:
-            return eval(self.Func, MATH_FUNC, pas)
+            return self.Func.execute(pas)
         except NameError:
             raise KeyError('Parent node not found')
 
@@ -185,16 +177,13 @@ class FunctionLoci(Loci):
 class PseudoLoci(Loci):
     def __init__(self, name, val, pas=None):
         Loci.__init__(self, name)
-
-        if pas:
-            self.Parent = pas
-        else:
-            self.Parent, _ = parse_parents(val)
+        val = parse_function(val)
+        self.__parents = pas if pas else val.Parents
         self.Func = 'f(' + ', '.join(self.Parents) + ')'
 
     @property
     def Parents(self):
-        return self.Parent
+        return self.__parents
 
     @property
     def Definition(self):

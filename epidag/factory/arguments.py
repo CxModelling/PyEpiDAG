@@ -12,9 +12,6 @@ __all__ = ['ValidationError',
            'Options', 'NotNull']
 
 
-# todo function
-
-
 class ValidationError(ValueError):
     def __init__(self, message='', *args):
         """

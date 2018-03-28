@@ -151,7 +151,7 @@ class Workshop:
             try:
                 key = arg['key']
             except KeyError:
-                arg['key'] = key = vlds[i]
+                arg['key'] = key = vlds[i].Name
             args[key] = arg
 
         fn.Arguments = list()
@@ -162,11 +162,11 @@ class Workshop:
                 if not vld.Optional:
                     raise KeyError('Field {} is required'.format(vld.Name))
 
-    def from_function(self, name, fn, env=None, loc=None, js=True, modify=False, sort=False):
-        bp = fn.to_blueprint(name, loc, env)
+    def from_function(self, name, fn, loc=None, js=True, modify=False, sort=False):
+        bp = fn.to_blueprint(name, loc) if loc else fn.to_blueprint(name)
         creator = self.Creators[bp['Type']]
         if sort:
-            pars = creator.sort_function_arguments(bp, self.Resources)  # todo
+            pars = creator.sort_function_arguments(bp, self.Resources)
         elif isinstance(bp['Args'], list):
             try:
                 pars = {arg['key']: arg['value'] for arg in bp['Args']}
@@ -184,10 +184,10 @@ class Workshop:
                 pass
         return res
 
-    def parse(self, name, fn=None, env=None, loc=None, js=True, modify=False):
+    def parse(self, name, fn=None, loc=None, js=True, modify=False):
         if not fn:
             fn = name
-        return self.from_function(name, parse_function(fn), env, loc, js, modify, True)
+        return self.from_function(name, parse_function(fn), loc, js, modify, True)
 
     def get_form(self, tp):
         return self.Creators[tp].get_form(self.Resources)
