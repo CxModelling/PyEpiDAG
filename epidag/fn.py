@@ -1,7 +1,11 @@
 import epidag as dag
-
+import epidag.simulation.fn as sim
+import epidag.causality.fn as causal
+import epidag.fitting.fn as fit
 
 __author__ = 'TimeWz667'
+__all__ = ['sample', 'sample_minimally', 'as_simulation_core',
+           'sim', 'causal', 'fit']
 
 
 def sample(bn, cond=None):
@@ -73,3 +77,11 @@ def as_simulation_core(bn, hie=None, root=None, random=None, out=None):
     ng = dag.form_hierarchy(bn, hie, root)
     bp = dag.formulate_blueprint(bn, ng, random, out)
     return dag.simulation.SimulationCore(bn, bp, ng)
+
+
+def as_causal_diagram(bn):
+    return
+
+
+def as_data_model(bn):
+    return
