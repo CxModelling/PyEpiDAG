@@ -206,7 +206,7 @@ def analyse_node_type(bn, root=None, report=False):
                 fix.append(node)
             elif node in leaves:
                 act.append(node)
-            elif nx.descendants(g, node) < ng.Nodes:
+            elif nx.descendants(g, node) <= ng.Nodes:
                 ran.append(node)
             else:
                 fix.append(node)

@@ -24,6 +24,7 @@ class ParameterCore(Gene):
         Generate an offspring node
         :param nickname: nickname
         :param group: target group of new parameter node
+        :param exo: exogenous variables
         :return:
         """
         if nickname in self.Children:
@@ -111,9 +112,10 @@ class ParameterCore(Gene):
         if isinstance(imp, dict):
             shocked = set.union(*[set(nx.descendants(g, k)) for k in imp.keys()])
             shocked.difference_update(imp.keys())
+            shocked = shocked.union([k for k, v in imp.items() if v is None])
         elif isinstance(imp, list):
             shocked = set.union(*[set(nx.descendants(g, k)) for k in imp])
-            shocked.difference_update(imp)
+            shocked = shocked.union(imp)
             imp = dict()
         else:
             raise AttributeError('imp defined incorrectly')
