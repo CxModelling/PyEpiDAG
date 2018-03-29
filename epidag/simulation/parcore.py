@@ -19,7 +19,7 @@ class ParameterCore(Gene):
     def Group(self):
         return self.SG.Name
 
-    def breed(self, nickname, group):
+    def breed(self, nickname, group, exo=None):
         """
         Generate an offspring node
         :param nickname: nickname
@@ -28,9 +28,35 @@ class ParameterCore(Gene):
         """
         if nickname in self.Children:
             raise ValueError('{} has already existed'.format(nickname))
-        chd = self.SG.breed(nickname, group, self)
+        chd = self.SG.breed(nickname, group, self, exo)
         self.Children[nickname] = chd
         return chd
+
+    def detach_from_parent(self, collect_pars=False):
+        """
+        Remove the reference to it parent
+        :param collect_pars: collect the parameters of the parent to itself
+        """
+        if not self.Parent:
+            return
+        self.Parent.remove_children(self.Nickname)
+        if collect_pars:
+            for k, v in self.Parent:
+                self[k] = v
+        self.Parent = None
+
+    def remove_children(self, k):
+        """
+        Remove a child ParameterCore
+        :param k: the name of the child
+        :return: the removed ParameterCore
+        """
+        try:
+            chd = self.Children[k]
+            del self.Children[k]
+            return chd
+        except KeyError:
+            pass
 
     def list_sampler(self):
         for k in self.Actors.keys():

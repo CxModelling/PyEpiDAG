@@ -28,7 +28,6 @@ class CompoundActor(SimulationActor):
         else:
             return self.Loci.sample(pas)
 
-
     def __repr__(self):
         return '{} ({})'.format(self.Field, '->'.join(f.Name for f in self.Flow))
 
