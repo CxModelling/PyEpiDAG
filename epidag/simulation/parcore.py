@@ -111,8 +111,10 @@ class ParameterCore(Gene):
         g = self.SG.SC.BN.DAG
         if isinstance(imp, dict):
             shocked = set.union(*[set(nx.descendants(g, k)) for k in imp.keys()])
+            non_imp = [k for k, v in imp.items() if v is None]
+            imp = {k: v for k, v in imp.items() if v is not None}
             shocked.difference_update(imp.keys())
-            shocked = shocked.union([k for k, v in imp.items() if v is None])
+            shocked = shocked.union(non_imp)
         elif isinstance(imp, list):
             shocked = set.union(*[set(nx.descendants(g, k)) for k in imp])
             shocked = shocked.union(imp)
