@@ -70,7 +70,7 @@ class SimulationGroup:
             if loci.Name in imp:
                 pc.Locus[loci.Name] = imp[loci.Name]
             elif loci.Name in fixed:
-                pc.Locus[loci.Name] = loci.sample(pc)
+                loci.fill(pc)
             prior += loci.evaluate(pc)
 
         pc.LogPrior = prior

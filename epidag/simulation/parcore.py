@@ -79,13 +79,19 @@ class ParameterCore(Gene):
     def impulse(self, imp):
         """
         Do interventions
-        :param imp: dict, intervention
+        :param imp: dict(node: value) or list(node), intervention
         """
         g = self.SG.SC.BN.DAG
-        shocked = set.union(*[set(nx.descendants(g, k)) for k in imp.keys()])
-        print(shocked)
-        shocked.difference_update(imp.keys())
-        print(shocked)
+        if isinstance(imp, dict):
+            shocked = set.union(*[set(nx.descendants(g, k)) for k in imp.keys()])
+            shocked.difference_update(imp.keys())
+        elif isinstance(imp, list):
+            shocked = set.union(*[set(nx.descendants(g, k)) for k in imp])
+            shocked.difference_update(imp)
+            imp = dict()
+        else:
+            raise AttributeError('imp defined incorrectly')
+        # print(shocked)
         self.__set_response(imp, shocked)
 
     def __set_response(self, imp, shocked):
@@ -125,12 +131,11 @@ class ParameterCore(Gene):
             return Gene.__getitem__(self, item)
         except KeyError:
             try:
-                self.Parent[item]
+                return self.Parent[item]
             except AttributeError:
                 raise KeyError('{} not found'.format(item))
             except KeyError:
                 raise KeyError('{} not found'.format(item))
-
 
     def deep_print(self, i=0):
         prefix = '--' * i + ' ' if i else ''

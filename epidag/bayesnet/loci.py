@@ -123,7 +123,7 @@ class DistributionLoci(Loci):
         return self.get_distribution(pas).sample()
 
     def fill(self, gene):
-        gene[self.Name] = self.sample(gene.Locus)
+        gene[self.Name] = self.sample(gene)
 
     def evaluate(self, pas=None):
         return self.get_distribution(pas).logpdf(pas[self.Name])
@@ -155,8 +155,9 @@ class FunctionLoci(Loci):
         return self.Func.Expression
 
     def sample(self, pas=None):
+        loc = {pa: pas[pa] for pa in self.Parents}
         try:
-            return self.Func.execute(pas)
+            return self.Func.execute(loc)
         except NameError:
             raise KeyError('Parent node not found')
 

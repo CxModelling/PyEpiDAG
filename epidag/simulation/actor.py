@@ -8,7 +8,7 @@ class SimulationActor(metaclass=ABCMeta):
         self.Field = field
 
     @abstractmethod
-    def sample(self, pas=None):
+    def sample(self, pas=None, **kwargs):
         pass
 
 
@@ -18,11 +18,16 @@ class CompoundActor(SimulationActor):
         self.Flow = list(flow)
         self.Loci = loci
 
-    def sample(self, pas=None):
+    def sample(self, pas=None, list_all=False, **kwargs):
         pas = dict(pas) if pas else dict()
         for loc in self.Flow:
             pas[loc.Name] = loc.sample(pas)
-        return self.Loci.sample(pas)
+
+        if list_all:
+            return self.Loci.sample(pas), pas
+        else:
+            return self.Loci.sample(pas)
+
 
     def __repr__(self):
         return '{} ({})'.format(self.Field, '->'.join(f.Name for f in self.Flow))
@@ -33,7 +38,7 @@ class SingleActor(SimulationActor):
         SimulationActor.__init__(self, field)
         self.Loci = di
 
-    def sample(self, pas=None):
+    def sample(self, pas=None, **kwargs):
         pas = dict(pas) if pas else dict()
         return self.Loci.sample(pas)
 
@@ -47,7 +52,7 @@ class FrozenSingleActor(SimulationActor):
         self.Loci = di
         self.Dist = di.get_distribution(pas)
 
-    def sample(self, pas=None):
+    def sample(self, pas=None, **kwargs):
         return self.Dist.sample()
 
     def __repr__(self):
@@ -59,12 +64,12 @@ class Sampler:
         self.Actor = act
         self.Loc = loc
 
-    def __call__(self):
+    def __call__(self, **kwargs):
         """
         Sample a value of self.Actor on self.Loc
         :return: a single value
         """
-        return self.Actor.sample(self.Loc)
+        return self.Actor.sample(self.Loc, **kwargs)
 
     def sample(self, n=1):
         """

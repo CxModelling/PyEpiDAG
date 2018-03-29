@@ -47,3 +47,6 @@ pc_taipei.breed('B1', 'agB')
 pc_taipei.breed('B2', 'agB')
 
 pc.deep_print()
+
+pc.impulse({'b1':100})
+pc.deep_print()

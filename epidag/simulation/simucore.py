@@ -29,6 +29,7 @@ class SimulationCore:
     def __init__(self, bn, bp=None, root=None, hoist=True):
         self.Name = bn.Name
         self.BN = bn
+        self.RootNode = root
         self.RootSG = root.Name
         self.SGs = get_simulation_groups(bn, bp, root)
         for sg in self.SGs.values():
@@ -59,6 +60,9 @@ class SimulationCore:
             'BayesianNetwork': self.BN.to_json(),
             'Root': self.RootSG
         }
+
+    def deep_print(self):
+        self.RootNode.deep_print()
 
     def __repr__(self):
         return 'Simulation core: {}'.format(self.Name)

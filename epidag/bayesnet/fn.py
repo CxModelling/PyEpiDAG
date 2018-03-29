@@ -1,4 +1,5 @@
 import networkx as nx
+from .loci import ValueLoci, ExoValueLoci
 
 __author__ = 'TimeWz667'
 __all__ = ['get_sufficient_nodes', 'form_hierarchy', 'formulate_blueprint', 'analyse_node_type']
@@ -120,19 +121,30 @@ def form_hierarchy(bn, hie=None, root=None):
     """
 
     :param bn: epidag.BayesNet, a Bayesian Network
-    :param hie: hierarical structure of the nodes of bn
+    :param hie: hierarchical structure of the nodes of bn
     :param root: name of root group
     :return: A tree structure with NodeGroup
     """
     g = bn.DAG
 
+    # find the root group of node networks
     if isinstance(hie, dict):
-        if not root:
-            for k in hie.keys():
-                if not (any([k in v for v in hie.values()])):
-                    root = k
-                    break
-        root = define_node(root, hie)
+        root_p = list()
+
+        for k in hie.keys():
+            if not (any([k in v for v in hie.values()])):
+                root_p.append(k)
+
+        if len(root_p) is 1:
+            root = define_node(root_p[0], hie)
+        elif len(root_p) is 0:
+            raise SyntaxError('Hierarchy is ill-defined')
+        else:
+            if 'root' in hie:
+                hie['root'] += [k for k in root_p if k != 'root']
+            else:
+                hie['root'] = root_p
+            root = define_node('root', hie)
 
     elif isinstance(hie, list):
         root = NodeGroup('root', hie[0])
@@ -164,7 +176,7 @@ def form_hierarchy(bn, hie=None, root=None):
     return root
 
 
-def analyse_node_type(bn, root, report=False):
+def analyse_node_type(bn, root=None, report=False):
     """
     Analyse nodes in each group based on their potential characteristics.
     A node which can be an actor must be a leaf of the given DAG.
@@ -178,12 +190,21 @@ def analyse_node_type(bn, root, report=False):
     g = bn.DAG
     leaves = bn.LeafNodes
 
+    if not root:
+        root = form_hierarchy(bn)
+
+    def no_randomness(nod):
+        return isinstance(nod, ValueLoci) or isinstance(nod, ExoValueLoci)
+
     res = dict()
+    must_fixed = [k for k, v in g.nodes().items() if no_randomness(v['loci'])]
 
     def fn(ng, ind=0):
         fix, ran, act = list(), list(), list()
         for node in ng.Nodes:
-            if node in leaves:
+            if node in must_fixed:
+                fix.append(node)
+            elif node in leaves:
                 act.append(node)
             elif nx.descendants(g, node) < ng.Nodes:
                 ran.append(node)
@@ -204,7 +225,7 @@ def analyse_node_type(bn, root, report=False):
     return res
 
 
-def formulate_blueprint(bn, root, random=None, out=None):
+def formulate_blueprint(bn, root=None, random=None, out=None):
     """
     a blueprint of a simulation model based on given a Bayesian network.
     It describes every node in the network as 1) fixed variable, 2) random variable, 3) exposed distribution
@@ -225,7 +246,10 @@ def formulate_blueprint(bn, root, random=None, out=None):
 
         ars = list()
         for r in rs:
-            (ars if r in random else afs).append(r)
+            if r in random:
+                ars.append(r)
+            else:
+                afs.append(r)
 
         acs = list()
         for c in cs:
