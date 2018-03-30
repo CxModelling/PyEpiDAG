@@ -229,7 +229,7 @@ if __name__ == '__main__':
     print(parse_parents('x+y/2 * max(z, 5)'), '\n')
 
     print('Math expression')
-    me = parse_math_express('x+y/2 * max(z, 5)')
+    me = parse_math_expression('x+y/2 * max(z, 5)')
     print(me)
     print(me({'x': 2, 'y': 4, 'z': 10}), '\n')
 
