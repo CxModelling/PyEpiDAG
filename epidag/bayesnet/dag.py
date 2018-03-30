@@ -117,6 +117,9 @@ class BayesianNetwork:
         pos = graphviz_layout(self.DAG, prog='dot')
         nx.draw(self.DAG, pos, with_labels=True, arrows=True)
 
+    def clone(self):
+        return BayesianNetwork(self.to_json())
+
     __repr__ = __str__
 
 

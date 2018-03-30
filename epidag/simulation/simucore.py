@@ -1,4 +1,5 @@
 from .simugroup import SimulationGroup
+from copy import deepcopy
 __author__ = 'TimeWz667'
 
 __all__ = ['SimulationCore']
@@ -29,6 +30,7 @@ class SimulationCore:
     def __init__(self, bn, bp=None, root=None, hoist=True):
         self.Name = bn.Name
         self.BN = bn
+        self.RootBp = bp
         self.RootNode = root
         self.RootSG = root.Name
         self.SGs = get_simulation_groups(bn, bp, root)
@@ -58,12 +60,15 @@ class SimulationCore:
     def to_json(self):
         return {
             'BayesianNetwork': self.BN.to_json(),
+            'Blueprint': deepcopy(self.RootBp),
             'Root': self.RootSG
         }
 
     def deep_print(self):
-        self.RootNode.deep_print()
+        self.RootNode.print()
+
+    def clone(self):
+        return SimulationCore(self.BN, deepcopy(self.RootBp), self.RootNode, self.Hoist)
 
     def __repr__(self):
         return 'Simulation core: {}'.format(self.Name)
-

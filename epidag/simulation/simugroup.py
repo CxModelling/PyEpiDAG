@@ -87,7 +87,7 @@ class SimulationGroup:
         :param actors: bool, true if actors need to be installed locally
         :return:
         """
-        pc = ParameterCore(nickname, self, dict(), 0)
+        pc = ParameterCore(nickname, self, None, 0)
         if parent:
             pc.Parent = parent
         exo = exo if exo else dict()

@@ -33,6 +33,11 @@ class ParameterCore(Gene):
         self.Children[nickname] = chd
         return chd
 
+    def duplicate(self, nickname):
+        if not self.Parent:
+            raise AttributeError('Root node can not be duplicate')
+        return self.Parent.bread(nickname, self.Group, exo=self.Locus)
+
     def detach_from_parent(self, collect_pars=False):
         """
         Remove the reference to it parent
@@ -59,14 +64,13 @@ class ParameterCore(Gene):
         except KeyError:
             pass
 
-    def list_sampler(self):
-        for k in self.Actors.keys():
-            yield k
+    def list_samplers(self):
+        li = list(self.Actors.keys())
 
         if self.Parent:
             actors = self.Parent.ChildrenActors[self.SG.Name]
-            for k in actors:
-                yield k
+            li += list(actors.keys())
+        return li
 
     def get_sampler(self, sampler):
         """
@@ -175,3 +179,13 @@ class ParameterCore(Gene):
 
     def print(self):
         print('{} ({})'.format(self.Nickname, self))
+
+    def clone(self, copy_sc=False):
+        if copy_sc:
+            sc = self.SG.SC.clone()
+            sg = sc.SGs[self.Group]
+        else:
+            sg = self.SG
+        pc_new = sg.generate(self.Nickname, dict(self))
+        pc_new.LogPrior = self.LogPrior
+        return pc_new
