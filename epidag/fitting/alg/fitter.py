@@ -13,17 +13,17 @@ class Fitter(metaclass=ABCMeta):
     def fit(self, n_post, **kwargs):
         pass
 
-    def posterior_to_dataframe(self):
+    def posterior_to_df(self):
         return pd.DataFrame([g.Locus for g in self.Posterior])
 
     def report_posterior(self):
-        df = self.posterior_to_dataframe()
+        df = self.posterior_to_df()
         return df.describe()
 
     def posterior_to_csv(self, file):
-        df = self.posterior_to_dataframe()
+        df = self.posterior_to_df()
         df.to_json(file, orient='records')
 
     def posterior_to_json(self, file):
-        df = self.posterior_to_dataframe()
+        df = self.posterior_to_df()
         df.to_csv(file)

@@ -3,6 +3,7 @@ from epidag import resample
 from .fitter import Fitter
 
 __author__ = 'TimeWz667'
+__all__ = ['SIR']
 
 
 class SIR(Fitter):

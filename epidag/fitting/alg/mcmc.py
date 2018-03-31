@@ -3,7 +3,7 @@ from .fitter import Fitter
 import numpy as np
 
 __author__ = 'TimeWz667'
-
+__all__ = ['MCMC']
 
 """
 Adopted from
