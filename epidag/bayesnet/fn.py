@@ -1,5 +1,5 @@
 import networkx as nx
-from .loci import ValueLoci, ExoValueLoci
+from epidag.bayesnet.loci import ValueLoci, ExoValueLoci
 
 __author__ = 'TimeWz667'
 __all__ = ['get_sufficient_nodes', 'form_hierarchy', 'formulate_blueprint', 'analyse_node_type']

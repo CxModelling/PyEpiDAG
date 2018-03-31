@@ -1,7 +1,7 @@
-from .util import *
-from . import factory
-from .bayesnet import *
-from . import simulation
-from . import causality
-from . import fitting
-from .fn import *
+from epidag.util import *
+import epidag.factory
+from epidag.bayesnet import *
+import epidag.simulation
+import epidag.causality
+import epidag.fitting
+from epidag.fn import *

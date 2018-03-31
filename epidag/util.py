@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.random import uniform, choice
+from numpy.random import choice
 from scipy.misc import logsumexp
 import math
 import ast

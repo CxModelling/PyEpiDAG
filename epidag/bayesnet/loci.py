@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from epidag import MATH_FUNC, parse_math_expression, parse_function
-from .distribution import parse_distribution_function, execute_distribution
+from epidag.bayesnet.distribution import parse_distribution_function, execute_distribution
 
 __author__ = 'TimeWz667'
 __all__ = ['ValueLoci', 'ExoValueLoci', 'DistributionLoci', 'FunctionLoci', 'PseudoLoci']

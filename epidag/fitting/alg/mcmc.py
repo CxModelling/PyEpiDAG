@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from .fitter import Fitter
+from epidag.fitting.alg.fitter import Fitter
 import numpy as np
 
 __author__ = 'TimeWz667'

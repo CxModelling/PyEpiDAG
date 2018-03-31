@@ -1,6 +1,6 @@
-from scipy.misc import logsumexp
 from epidag import resample
-from .fitter import Fitter
+from epidag.fitting.alg.fitter import Fitter
+
 
 __author__ = 'TimeWz667'
 __all__ = ['SIR']

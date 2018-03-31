@@ -1,9 +1,5 @@
-from .distribution import parse_distribution
-from .fn import *
-from .loci import *
-from .gene import *
-from .dag import *
-# from .mbayes import *
-# from .mcausal import *
-
-
+from epidag.bayesnet.distribution import parse_distribution
+from epidag.bayesnet.fn import *
+from epidag.bayesnet.loci import *
+from epidag.bayesnet.gene import *
+from epidag.bayesnet.dag import *

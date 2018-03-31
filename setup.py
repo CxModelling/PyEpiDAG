@@ -2,8 +2,8 @@ from setuptools import setup
 
 setup(
     name='PyEpiDAG',
-    version='0.1',
-    packages=['epidag', 'epidag.fitting', 'epidag.factory', 'epidag.bayesnet'],
+    version='1.2',
+    packages=['epidag', 'epidag.bayesnet', 'epidag.factory', 'epidag.simulation', 'epidag.fitting', 'epidag.causality'],
     url='https://github.com/TimeWz667/PyEpiDAG',
     license='MIT',
     author='TimeWz',

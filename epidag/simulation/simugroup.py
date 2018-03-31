@@ -1,5 +1,5 @@
-from .actor import CompoundActor, FrozenSingleActor, SingleActor
-from .parcore import ParameterCore
+from epidag.simulation.actor import CompoundActor, FrozenSingleActor, SingleActor
+from epidag.simulation.parcore import ParameterCore
 from epidag.bayesnet.loci import ExoValueLoci
 import networkx as nx
 from collections import namedtuple

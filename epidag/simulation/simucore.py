@@ -1,4 +1,4 @@
-from .simugroup import SimulationGroup
+from epidag.simulation.simugroup import SimulationGroup
 from copy import deepcopy
 __author__ = 'TimeWz667'
 

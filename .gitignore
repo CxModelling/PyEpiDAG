@@ -10,3 +10,11 @@ dist/
 # Jupyter Notebook
 .ipynb_checkpoints
 .idea/
+
+PyEpiDAG.egg-info/
+epidag/__pycache__/
+epidag/bayesnet/__pycache__/
+epidag/causality/__pycache__/
+epidag/factory/__pycache__/
+epidag/fitting/__pycache__/
+epidag/simulation/__pycache__/

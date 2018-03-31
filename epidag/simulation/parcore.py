@@ -1,5 +1,5 @@
 from epidag.bayesnet import Gene
-from .actor import FrozenSingleActor, Sampler
+from epidag.simulation.actor import FrozenSingleActor, Sampler
 import networkx as nx
 
 __author__ = 'TimeWz667'
