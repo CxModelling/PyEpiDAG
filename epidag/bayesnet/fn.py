@@ -1,11 +1,13 @@
 import networkx as nx
 from epidag.bayesnet.loci import ValueLoci, ExoValueLoci
+import numpy as np
 
 __author__ = 'TimeWz667'
-__all__ = ['get_sufficient_nodes', 'form_hierarchy', 'formulate_blueprint', 'analyse_node_type']
+__all__ = ['get_sufficient_nodes', 'get_minimal_nodes',
+           'form_hierarchy', 'formulate_blueprint', 'analyse_node_type', 'evaluate_nodes']
 
 
-def get_sufficient_nodes(g, included, given):
+def get_sufficient_nodes(g, included, given=None):
     """
     Find the required nodes to assess the included nodes
     :param g: a directed acyclic graph
@@ -14,6 +16,7 @@ def get_sufficient_nodes(g, included, given):
     :return: a set of the required nodes
     """
     mi = g.copy()
+    given = given if given else dict()
     # remove all parents from the given nodes
     for nod in given:
         pas = list(mi.predecessors(nod))
@@ -21,6 +24,19 @@ def get_sufficient_nodes(g, included, given):
             mi.remove_edge(pa, nod)
     # find the nodes supporting the included nodes
     return set.union(*[nx.ancestors(mi, nod) for nod in included]).union(included)
+
+
+def get_minimal_nodes(g, included, given=None):
+    """
+    Find the required nodes to assess the included nodes without considering given nodes
+    :param g: a directed acyclic graph
+    :param included: targeted nodes
+    :param given: certain nodes
+    :return: a set of the required nodes
+    """
+    suf = get_sufficient_nodes(g, included=included, given=given)
+    suf.difference_update(given)
+    return suf
 
 
 class NodeGroup:
@@ -162,10 +178,10 @@ def form_hierarchy(bn, hie=None, root=None):
 
     all_floated.reverse()
 
-    for nod in bn.ExogenousNodes:
-        root.catch(nod)
+    # for nod in bn.ExogenousNodes:
+    #    root.catch(nod)
 
-    all_floated = [nod for nod in all_floated if nod not in bn.ExogenousNodes]
+    all_floated = [nod for nod in all_floated] # if nod not in bn.ExogenousNodes]
     for nod in all_floated:
         root.pass_down(nod, g)
 
@@ -263,3 +279,16 @@ def formulate_blueprint(bn, root=None, random=None, out=None):
         approved[k] = afs, ars, acs
     # todo detect unwilling changes
     return approved
+
+
+def evaluate_nodes(bn, pars):
+    """
+    Evaluate the likelihood of a set of variables
+    :param bn: epidag.BayesNet, a Bayesian Network
+    :param pars: dict, a container of parameters
+    :return: the log likelihood of pars
+    """
+    nodes = bn.DAG.nodes
+    lps = np.sum([nodes[k]['loci'].evaluate(pars) for k in pars.keys()])
+    return lps
+

@@ -94,6 +94,9 @@ class BayesianNetwork:
         self.LeafNodes = [k for k, v in self.DAG.succ.items() if len(v) is 0]
         self.OrderedNodes = list(nx.topological_sort(self.DAG))
 
+    def is_rv(self, node):
+        return isinstance(self[node], dag.DistributionLoci)
+
     def __getitem__(self, item):
         return self.DAG.nodes[item]['loci']
 
