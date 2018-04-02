@@ -1,11 +1,9 @@
 import epidag as dag
-import epidag.simulation.fn as sim
-import epidag.causality.fn as causal
-import epidag.fitting.fn as fit
+from epidag.simulation.fn import *
+from epidag.causality.fn import *
+from epidag.fitting.fn import *
 
 __author__ = 'TimeWz667'
-__all__ = ['sample', 'sample_minimally', 'as_simulation_core',
-           'sim', 'causal', 'fit']
 
 
 def sample(bn, cond=None):
@@ -62,26 +60,6 @@ def sample_minimally(bn, included, cond=None, sources=True):
         return sinks
 
 
-def as_simulation_core(bn, hie=None, root=None, random=None, out=None):
-    """
-    a blueprint of a simulation model based on given a Bayesian network.
-    It describes every node in the network as 1) fixed variable, 2) random variable, 3) exposed distribution
-    :param bn: epidag.BayesNet, a Bayesian Network
-    :param hie: hierarchical structure of the nodes of bn
-    :param root: name of root group
-    :param random: nodes with random effects within an individual
-    :param out: nodes can be used in simulation model
-    :return: a simulation model
-    """
-
-    ng = dag.form_hierarchy(bn, hie, root)
-    bp = dag.formulate_blueprint(bn, ng, random, out)
-    return dag.simulation.SimulationCore(bn, bp, ng)
-
 
 def as_causal_diagram(bn):
-    return
-
-
-def as_data_model(bn):
     return
