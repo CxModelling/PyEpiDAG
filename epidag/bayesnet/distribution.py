@@ -70,9 +70,11 @@ class SpDouble(AbsDistribution):
             return self.Dist.rvs()
         return self.Dist.rvs(n)
 
+    @property
     def Interval(self):
         return self.Dist.interval(1)
 
+    @property
     def Type(self):
         return 'Double'
 
@@ -101,10 +103,12 @@ class SpInteger(AbsDistribution):
             return round(self.Dist.rvs())
         return np.round(self.Dist.rvs(n))
 
+    @property
     def Interval(self):
         inter = self.Dist.interval(1)
         return inter[0]+1, inter[1]
 
+    @property
     def Type(self):
         return 'Integer'
 

@@ -14,15 +14,18 @@ class PriorNodeSet:
         return dag.Gene(vs, prior)
 
     def evaluate_prior(self, bn, gene):
-        vs = {k: v for k, v in gene.Locus if k in self.Nodes}
+        vs = {k: v for k, v in gene if k in self.Nodes}
         return dag.evaluate_nodes(bn, vs)
 
     def get_prior_distributions(self, bn, gene):
-        # todo
-        pass
+        dis = dict()
+        for k, _ in gene:
+            if k in self.Nodes and bn.is_rv(k):
+                dis[k] = bn[k].get_distribution(gene)
+        return dis
 
     def __str__(self):
-        return "{}".format(self.Nodes)
+        return "Prior nodes: {}".format(self.Nodes)
 
     __repr__ = __str__
 
@@ -39,8 +42,9 @@ class BayesianModel(metaclass=ABCMeta):
         prior.LogPrior = self.Root.evaluate_prior(self.BN, prior)
         return prior.LogPrior
 
-    def get_prior_distributions(self, prior):
-        self.Root.get_prior_distributions(self.BN, prior)
+    def get_prior_distributions(self, prior=None):
+        prior = prior if prior else self.sample_prior()
+        return self.Root.get_prior_distributions(self.BN, prior)
 
     @property
     @abstractmethod

@@ -97,13 +97,13 @@ class MCMC(Fitter):
         self.Steppers = list()
         self.Last = None
 
-        for loci, dist in self.Model.sample_distribution().items():
+        for loci, dist in self.Model.get_prior_distributions().items():
             if dist.Type is 'Double':
                 self.Steppers.append(DoubleStepper(loci, dist.Lower, dist.Upper))
             elif dist.Type is 'Integer':
                 self.Steppers.append(IntegerStepper(loci, dist.Lower, dist.Upper))
             elif dist.Type is 'Binary':
-                self.Steppers.append(DoubleStepper(loci, dist.Lower, dist.Upper))
+                self.Steppers.append(BinaryStepper(loci, dist.Lower, dist.Upper))
 
     def initialise(self):
         self.Posterior.clear()
@@ -111,6 +111,7 @@ class MCMC(Fitter):
         self.Last.LogLikelihood = self.Model.evaluate_likelihood(self.Last)
 
     def fit(self, niter, **kwargs):
+        print('Initialising')
         self.initialise()
         ns = 0
         print('Burning in')
