@@ -125,7 +125,7 @@ class ParameterCore(Gene):
             imp = dict()
         else:
             raise AttributeError('imp defined incorrectly')
-        # print(shocked)
+        #print(shocked)
         self.__set_response(imp, shocked)
 
     def __set_response(self, imp, shocked):
@@ -133,7 +133,7 @@ class ParameterCore(Gene):
         shocked_actors = [k for k, v in self.Actors.items() if k in shocked and isinstance(v, FrozenSingleActor)]
         shocked_hoist = dict()
         for k, v in self.ChildrenActors.items():
-            shocked_hoist[k] = [s for s, t in v.items() if s in shocked and isinstance(v, FrozenSingleActor)]
+            shocked_hoist[k] = [s for s, t in v.items() if s in shocked and isinstance(t, FrozenSingleActor)]
         # print(shocked_locus, shocked_actors, shocked_hoist)
         self.SG.set_response(imp, shocked_locus, shocked_actors, shocked_hoist, self)
 

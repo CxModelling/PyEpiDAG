@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.random import choice
-from scipy.misc import logsumexp
+import scipy.special as sp
 import math
 import ast
 import astunparse
@@ -25,7 +25,9 @@ MATH_FUNC = {
     'sqrt': np.sqrt,
     'abs': np.abs,
     'erf': math.erf,
-    'pow': math.pow
+    'pow': math.pow,
+    'logit': sp.logit,
+    'expit': sp.expit
 }
 
 
@@ -46,7 +48,7 @@ def resample(wts, hs, pars=None, log=True):
     size = len(wts)
     if log:
         wts = np.array(wts)
-        lse = logsumexp(wts)
+        lse = sp.logsumexp(wts)
         wts -= lse
         sel = choice(size, size, True, np.exp(wts))
     else:
@@ -219,7 +221,7 @@ class EvaluatedFunction:
 def evaluate_function(pf: ParsedFunction, loc=None):
     args = pf.get_arguments(loc)
     src_arg = [('{}={}'.format(arg['key'], arg['value']) if 'key' in arg else str(arg['value'])) for arg in args]
-    src = '{}({})'.format(pf.Function, ', '.join(src_arg))
+    # src = '{}({})'.format(pf.Function, ', '.join(src_arg))
     return EvaluatedFunction(pf.Source, pf.Function, args)
 
 

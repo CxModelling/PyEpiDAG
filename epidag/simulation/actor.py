@@ -54,6 +54,9 @@ class FrozenSingleActor(SimulationActor):
     def sample(self, pas=None, **kwargs):
         return self.Dist.sample()
 
+    def update(self, pas):
+        self.Dist = self.Loci.get_distribution(pas)
+
     def __repr__(self):
         return '{} ({})'.format(self.Field, self.Dist.Dist)
 

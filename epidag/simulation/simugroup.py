@@ -124,14 +124,12 @@ class SimulationGroup:
 
         pc.LogPrior = prior
 
-        bn = self.SC.BN
-
         for act in actors:
-            pc.Actors[act] = FrozenSingleActor(act, bn[act], pc)
+            pc.Actors[act].update(pc)
 
         for chd, acts in hoist.items():
             for act in acts:
-                pc.ChildrenActors[chd][act] = FrozenSingleActor(act, bn[act], pc)
+                pc.ChildrenActors[chd][act].update(pc)
 
     def breed(self, nickname, group, pa, exo):
         if group not in self.Children:
