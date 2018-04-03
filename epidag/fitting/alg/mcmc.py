@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from epidag.fitting.alg.fitter import Fitter
 import numpy as np
+import logging
 
 __author__ = 'TimeWz667'
 __all__ = ['MCMC']
@@ -10,6 +11,9 @@ Adopted from
     Roberts, Gareth O., and Jeffrey S. Rosenthal. 
     "General state space Markov chains and MCMC algorithms." Probability Surveys 1 (2004): 20-71.
 """
+
+
+logger = logging.getLogger(__name__)
 
 
 class AbsStepper(metaclass=ABCMeta):
@@ -111,16 +115,16 @@ class MCMC(Fitter):
         self.Last.LogLikelihood = self.Model.evaluate_likelihood(self.Last)
 
     def fit(self, niter, **kwargs):
-        print('Initialising')
+        logger.info('Initialising')
         self.initialise()
         ns = 0
-        print('Burning in')
+        logger.info('Burning in')
         while ns < self.BurnIn:
             for stp in self.Steppers:
                 ns += 1
                 self.Last = stp.step(self.Model, self.Last)
 
-        print('Gathering posteriori')
+        logger.info('Gathering posteriori')
         while True:
             for stp in self.Steppers:
                 ns += 1
@@ -128,11 +132,11 @@ class MCMC(Fitter):
                 if ns % self.Thin is 0:
                     self.Posterior.append(self.Last)
                 if len(self.Posterior) >= niter:
-                    print('Fitting completed')
+                    logger.info('Completed')
                     return
 
     def update(self, n):
-        print('Updating')
+        logger.info('Updating')
         ns = 0
         while True:
             for stp in self.Steppers:

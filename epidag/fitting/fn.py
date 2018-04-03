@@ -1,6 +1,7 @@
 import epidag as dag
 from epidag.fitting.databm import as_bayesian_model_frame, get_data_shadow, \
     get_data_hierarchy, DataNodeSet, DataBayesianModel
+from epidag.fitting.simubm import SimulationBayesianModel
 
 
 __author__ = 'TimeWz667'
@@ -31,3 +32,7 @@ def as_data_model(bn, data, exo=None, latent=None, datum_name='entries'):
         leaves.append(DataNodeSet(datum, min_nodes, need_mc))
 
     return DataBayesianModel(bn, root_nodes, leaves)
+
+
+def as_simulation_data_model(sm, sim_fn, mea_fun, exact_like=False):
+    return SimulationBayesianModel(sm, sim_fn, mea_fun, exact_like)
