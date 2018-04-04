@@ -5,7 +5,7 @@ from epidag.util import *
 class ExpressionParserCase(unittest.TestCase):
 
     def setUp(self):
-        self.me = parse_math_express('x+y/2 * max(z, 5)')
+        self.me = parse_math_expression('x+y/2 * max(z, 5)')
 
     def test_parents(self):
         self.assertSetEqual(self.me.Var, {'x', 'y', 'z'})
@@ -30,8 +30,7 @@ class FunctionParserCase(unittest.TestCase):
         self.assertListEqual(self.fn.to_json({'k': 7, 'a': 10})['Args'], [40, 'k', 7, 5, False])
 
     def test_order(self):
-        self.fn.sort_arguments(['1', '2', '3', 's', 't'])
-        self.assertListEqual(self.fn.to_json()['Args'], ['(4 * a)', 'k', 'k', False, 5])
+        self.assertListEqual(self.fn.to_json()['Args'], ['(4 * a)', 'k', 'k', 5, False])
 
 
 if __name__ == '__main__':
