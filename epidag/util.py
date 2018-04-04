@@ -44,22 +44,24 @@ class ScriptException(Exception):
         return self.Err
 
 
-def resample(wts, hs, pars=None, log=True):
+def resample(wts, hs, pars=None, log=True, new_size=None):
     size = len(wts)
+    new_size = max(new_size, 1) if new_size else size
+
     if log:
         wts = np.array(wts)
         lse = sp.logsumexp(wts)
         wts -= lse
-        sel = choice(size, size, True, np.exp(wts))
+        sel = choice(size, new_size, replace=True, p=np.exp(wts))
     else:
         lse = np.sum(wts)
         wts /= lse
         lse = np.log(lse)
-        sel = choice(size, size, True, wts)
+        sel = choice(size, new_size, replace=True, p=wts)
     if pars:
-        return [hs[i] for i in sel], [pars[i] for i in sel], lse - np.log(size)
+        return [hs[i] for i in sel], [pars[i] for i in sel], lse - np.log(new_size)
     else:
-        return [hs[i] for i in sel], lse - np.log(size)
+        return [hs[i] for i in sel], lse - np.log(new_size)
 
 
 def find_ast_parents(seq_ast):

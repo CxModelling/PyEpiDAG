@@ -94,12 +94,17 @@ class IntegerStepper(AbsStepper):
 
 
 class MCMC(Fitter):
-    def __init__(self, bm, burn=1000, thin=2):
+    DefaultParameters = {
+        'burn': 1000,
+        'thin': 2
+    }
+
+    def __init__(self, bm):
         Fitter.__init__(self, bm)
-        self.BurnIn = burn
-        self.Thin = thin
         self.Steppers = list()
         self.Last = None
+        self.BurnIn = MCMC.DefaultParameters['burn']
+        self.Thin = MCMC.DefaultParameters['thin']
 
         for loci, dist in self.Model.get_prior_distributions().items():
             if dist.Type is 'Double':
@@ -115,6 +120,11 @@ class MCMC(Fitter):
         self.Last.LogLikelihood = self.Model.evaluate_likelihood(self.Last)
 
     def fit(self, niter, **kwargs):
+        if 'burn' in kwargs:
+            self.BurnIn = kwargs['burn']
+        if 'thin' in kwargs:
+            self.Thin = kwargs['thin']
+
         logger.info('Initialising')
         self.initialise()
         ns = 0
@@ -135,7 +145,10 @@ class MCMC(Fitter):
                     logger.info('Completed')
                     return
 
-    def update(self, n):
+    def update(self, n, **kwargs):
+        if 'thin' in kwargs:
+            self.Thin = kwargs['thin']
+
         logger.info('Updating')
         ns = 0
         while True:
@@ -145,5 +158,5 @@ class MCMC(Fitter):
                 if ns % self.Thin is 0:
                     self.Posterior.append(self.Last)
                 if ns >= n:
-                    print('Fitting completed')
+                    logger.info('Completed')
                     return

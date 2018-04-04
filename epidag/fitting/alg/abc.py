@@ -17,6 +17,9 @@ class ABC(Fitter):
 
     def __init__(self, bm):
         Fitter.__init__(self, bm)
+        self.TestN = ABC.DefaultParameters['test_n']
+        self.TestP = ABC.DefaultParameters['test_p']
+        self.Eps = None
         self.Prior = list()
 
     def initialise(self):
@@ -25,9 +28,10 @@ class ABC(Fitter):
     def fit(self, niter, **kwargs):
 
         logger.info('Initialising')
-        test_n = kwargs['test_n'] if 'test_n' in kwargs else ABC.DefaultParameters['test_n']
-        test_p = kwargs['test_p'] if test_n in kwargs else ABC.DefaultParameters['test_p']
-        test_p = max(test_p, 1/test_n)
+        if 'test_n' in kwargs:
+            self.TestN = kwargs['test_n']
+        if 'test_p' in kwargs:
+            self.TestP = min(max(kwargs['test_p'], 1/self.TestN), 1)
 
         self.Posterior.clear()
 
@@ -36,18 +40,32 @@ class ABC(Fitter):
         logger.info('Testing threshold')
 
         tests = list()
-        for _ in range(test_n):
+        for _ in range(self.TestN):
             p = self.Model.sample_prior()
             li = self.Model.evaluate_likelihood(p)
             tests.append(li)
-        eps = np.percentile(tests, (1-test_p)*100)
+
+        self.Eps = np.percentile(tests, (1-self.TestP)*100)
 
         logger.info('Fitting')
         while len(self.Posterior) < niter:
             p = self.Model.sample_prior()
             li = self.Model.evaluate_likelihood(p)
-            if li < eps:
+            if li < self.Eps:
                 continue
             p.LogLikelihood = li
             self.Posterior.append(p)
         logger.info('Gathering posteriori')
+
+    def update(self, n, **kwargs):
+        logger.info('Updating')
+        n_target = len(self.Posterior) + n
+
+        while len(self.Posterior) < n_target:
+            p = self.Model.sample_prior()
+            li = self.Model.evaluate_likelihood(p)
+            if li < self.Eps:
+                continue
+            p.LogLikelihood = li
+            self.Posterior.append(p)
+

@@ -13,6 +13,10 @@ class Fitter(metaclass=ABCMeta):
     def fit(self, n_post, **kwargs):
         pass
 
+    @abstractmethod
+    def update(self, n_add, **kwargs):
+        pass
+
     def posterior_to_df(self):
         return pd.DataFrame([g.Locus for g in self.Posterior])
 

@@ -6,8 +6,9 @@ __all__ = []
 
 
 class SimulationBayesianModel(BayesianModel):
-    def __init__(self, sm, sim_fn, mea_fun, exact_like=False):
+    def __init__(self, sm, data, sim_fn, mea_fun, exact_like=False):
         BayesianModel.__init__(self, sm.BN)
+        self.Data = data
         self.SimCore = sm
         self.SimFn = sim_fn
         self.MeasureFn = mea_fun
@@ -15,8 +16,9 @@ class SimulationBayesianModel(BayesianModel):
         self.Index = 0
 
     def sample_prior(self):
-        self.SimCore.generate('Sim{:06d}'.format(self.Index))
+        p = self.SimCore.generate('Sim{:06d}'.format(self.Index))
         self.Index += 1
+        return p
 
     def evaluate_prior(self, prior):
         prior.LogPrior = dag.evaluate_nodes(self.SimCore.BN, prior)
@@ -32,8 +34,8 @@ class SimulationBayesianModel(BayesianModel):
         return dis
 
     def evaluate_likelihood(self, prior):
-        model = self.SimFn(prior)
-        return self.MeasureFn(model)
+        sim = self.SimFn(prior, self.Data)
+        return self.MeasureFn(sim, self.Data)
 
     @property
     def has_exact_likelihood(self):

@@ -5,7 +5,7 @@ from epidag.fitting.simubm import SimulationBayesianModel
 
 
 __author__ = 'TimeWz667'
-__all__ = ['as_data_model']
+__all__ = ['as_data_model', 'as_simulation_data_model']
 
 
 def as_data_model(bn, data, exo=None, latent=None, datum_name='entries'):
@@ -34,5 +34,5 @@ def as_data_model(bn, data, exo=None, latent=None, datum_name='entries'):
     return DataBayesianModel(bn, root_nodes, leaves)
 
 
-def as_simulation_data_model(sm, sim_fn, mea_fun, exact_like=False):
-    return SimulationBayesianModel(sm, sim_fn, mea_fun, exact_like)
+def as_simulation_data_model(sm, data, sim_fn, mea_fun, exact_like=False):
+    return SimulationBayesianModel(sm, data, sim_fn, mea_fun, exact_like)
