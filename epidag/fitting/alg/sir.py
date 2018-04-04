@@ -39,4 +39,3 @@ class SIR(Fitter):
     def update(self, n_add, **kwargs):
         n = n_add + len(self.Posterior)
         self.Posterior, _ = resample(self.LogWts, self.Prior, new_size=n)
-
