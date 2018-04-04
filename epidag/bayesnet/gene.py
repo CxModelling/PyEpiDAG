@@ -32,7 +32,8 @@ class Gene:
         return g
 
     def __repr__(self):
-        return ", ".join([('{}: {:g}' if isinstance(v, float) else '{}: {}').format(k, v) for k, v in self.Locus.items()])
+        loc = [('{}: {:g}' if isinstance(v, float) else '{}: {}').format(k, v) for k, v in self.Locus.items()]
+        return ", ".join(loc)
 
     def to_json(self):
         return {

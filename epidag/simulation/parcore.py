@@ -125,7 +125,7 @@ class ParameterCore(Gene):
             imp = dict()
         else:
             raise AttributeError('imp defined incorrectly')
-        #print(shocked)
+        # print(shocked)
         self.__set_response(imp, shocked)
 
     def __set_response(self, imp, shocked):
