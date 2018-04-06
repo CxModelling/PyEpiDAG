@@ -6,8 +6,6 @@ build/
 develop-eggs/
 dist/
 
-
-# Jupyter Notebook
 .ipynb_checkpoints
 .idea/
 
@@ -18,3 +16,4 @@ epidag/causality/__pycache__/
 epidag/factory/__pycache__/
 epidag/fitting/__pycache__/
 epidag/simulation/__pycache__/
+epidag/fitting/alg/__pycache__/

@@ -13,6 +13,7 @@ setup(
     license='MIT',
     author='TimeWz',
     author_email='TimeWz667@gmail.com',
-    description='Epidemiological inference with DAG', install_requires=['pandas', 'networkx', 'astunparse',
-                                                                        'numpy', 'scipy', 'matplotlib']
+    description='Epidemiological inference with DAG',
+    install_requires=['pandas', 'networkx', 'astunparse', 'numpy', 'scipy', 'matplotlib'],
+    python_requires='>=3.5'
 )
