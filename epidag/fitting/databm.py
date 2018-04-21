@@ -1,10 +1,11 @@
 import epidag as dag
 import numpy as np
-from epidag.fitting.bayesmodel import BayesianModel
+from .bayesmodel import BayesianModel
 from scipy.special import logsumexp
 
 __author__ = 'TimeWz667'
-__all__ = []
+__all__ = ['as_bayesian_model_frame', 'get_data_shadow', 'get_data_hierarchy',
+           'PriorNodeSet', 'DataNodeSet', 'DataBayesianModel']
 
 
 def as_bayesian_model_frame(data, exo=None, datum_name='entries'):

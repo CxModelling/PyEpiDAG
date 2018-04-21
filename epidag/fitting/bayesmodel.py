@@ -1,4 +1,3 @@
-import epidag as dag
 from abc import ABCMeta, abstractmethod
 __author__ = 'TimeWz667'
 __all__ = ['BayesianModel']

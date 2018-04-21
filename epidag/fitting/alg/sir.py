@@ -1,5 +1,5 @@
 from epidag import resample
-from epidag.fitting.alg.fitter import Fitter
+from .fitter import Fitter
 import logging
 
 __author__ = 'TimeWz667'

@@ -1,4 +1,4 @@
-from epidag.fitting.alg.fitter import Fitter
+from .fitter import Fitter
 import numpy as np
 import logging
 

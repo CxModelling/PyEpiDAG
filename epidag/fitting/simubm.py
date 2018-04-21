@@ -1,8 +1,8 @@
 import epidag as dag
-from epidag.fitting.bayesmodel import BayesianModel
+from .bayesmodel import BayesianModel
 
 __author__ = 'TimeWz667'
-__all__ = []
+__all__ = ['SimulationBayesianModel']
 
 
 class SimulationBayesianModel(BayesianModel):

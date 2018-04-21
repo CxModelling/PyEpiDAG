@@ -1,7 +1,7 @@
 import epidag as dag
-from epidag.fitting.databm import as_bayesian_model_frame, get_data_shadow, \
+from .databm import as_bayesian_model_frame, get_data_shadow, \
     get_data_hierarchy, DataNodeSet, DataBayesianModel
-from epidag.fitting.simubm import SimulationBayesianModel
+from .simubm import SimulationBayesianModel
 
 
 __author__ = 'TimeWz667'
