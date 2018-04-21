@@ -17,6 +17,9 @@ class AbsDistribution(metaclass=ABCMeta):
         self.Name = name
         self.json = None
 
+    def __call__(self, **kwargs):
+        return self.sample(1, **kwargs)
+
     @property
     @abstractmethod
     def Interval(self):

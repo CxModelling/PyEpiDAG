@@ -47,13 +47,14 @@ class SimulationCore:
         except KeyError:
             raise KeyError('Unknown group')
 
-    def generate(self, nickname, exo=None):
+    def generate(self, nickname=None, exo=None):
         """
         Instantiate a simulation model
         :param nickname: nickname of generated parameter
         :param exo: dict, exogenous variables
         :return:
         """
+        nickname = nickname if nickname else self.Name
         exo = dict(exo) if exo else dict()
         return self.SGs[self.RootSG].generate(nickname, exo)
 
