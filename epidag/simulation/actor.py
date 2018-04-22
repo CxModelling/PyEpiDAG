@@ -18,15 +18,19 @@ class CompoundActor(SimulationActor):
         self.Flow = list(flow)
         self.Loci = loci
 
-    def sample(self, pas=None, list_all=False, **kwargs):
+    def sample(self, pas=None, **kwargs):
         pas = dict(pas) if pas else dict()
         for loc in self.Flow:
             pas[loc.Name] = loc.sample(pas)
+        return self.Loci.sample(pas)
 
-        if list_all:
-            return self.Loci.sample(pas), pas
-        else:
-            return self.Loci.sample(pas)
+    def sample_with_mediators(self, pas=None):
+        pas = dict(pas) if pas else dict()
+        res = dict()
+        for loc in self.Flow:
+            res[loc.Name] = loc.sample(pas)
+        res[self.Field] = self.Loci.sample(pas)
+        return res
 
     def __repr__(self):
         return '{} ({})'.format(self.Field, '->'.join(f.Name for f in self.Flow))
