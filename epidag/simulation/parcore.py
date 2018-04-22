@@ -35,7 +35,7 @@ class ParameterCore(Gene):
 
     def duplicate(self, nickname):
         if not self.Parent:
-            raise AttributeError('Root node can not be duplicate')
+            raise AttributeError('Root node can not be duplicated')
         return self.Parent.bread(nickname, self.Group, exo=self.Locus)
 
     def detach_from_parent(self, collect_pars=False):
@@ -83,15 +83,26 @@ class ParameterCore(Gene):
         except KeyError:
             try:
                 actor = self.Parent.ChildrenActors[self.SG.Name][sampler]
-            except AttributeError:
-                raise KeyError('No {} found'.format(sampler))
-            except KeyError:
+            except AttributeError or KeyError:
                 raise KeyError('No {} found'.format(sampler))
 
         return Sampler(actor, self)
 
     def get_child(self, name):
         return self.Children[name]
+
+    def get_child_actor(self, group, name):
+        try:
+            return self.get_child_actors(group)[name]
+        except KeyError:
+            raise KeyError('Actor not found')
+
+    def get_child_actors(self, group):
+        try:
+            ca = self.ChildrenActors[group]
+        except KeyError:
+            ca = self.SG.set_child_actors(self, group)
+        return ca
 
     def find_descendant(self, address):
         """

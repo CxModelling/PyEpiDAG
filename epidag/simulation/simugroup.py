@@ -11,10 +11,11 @@ ActorBlueprint = namedtuple('ActorBlueprint', ('Name', 'Type', 'TypeH', 'Flow'))
 
 
 class SimulationGroup:
-    def __init__(self, name, fixed, random, actors, pas):
+    def __init__(self, name, fixed, random, actors, exo, pas):
         self.Name = name
         self.SC = None
         self.Listening = list(pas)
+        self.Waiting = set(exo)
         self.BeFixed = set(fixed)
         self.BeRandom = set(random)
         self.BeActors = set(actors)
@@ -42,7 +43,8 @@ class SimulationGroup:
                     flow = bn.sort(flow)
                     flow = [bn[nod] for nod in flow]
                     bps.append(ActorBlueprint(act, 'c', 'c', flow))
-
+                elif pa.intersection(self.Waiting):
+                    bps.append(ActorBlueprint(act, 's', 's', None))
                 elif pa.intersection(self.BeFixed):
                     bps.append(ActorBlueprint(act, 'f', 's', None))
                 else:
@@ -52,7 +54,7 @@ class SimulationGroup:
 
         return self.__actor_blueprints
 
-    def actors(self, pas, hoist=True):
+    def actors(self, pas=None, hoist=True):
         bn = self.SC.BN
         actors = dict()
         if hoist:
@@ -71,8 +73,10 @@ class SimulationGroup:
                 name = act.Name
                 if act.Type == 'c':
                     actor = CompoundActor(name, act.Flow, bn[name])
-                else:
+                elif act.Type == 'f':
                     actor = FrozenSingleActor(name, bn[name], pas)
+                else:
+                    actor = SingleActor(name, bn[name])
 
                 actors[act.Name] = actor
 
@@ -91,20 +95,15 @@ class SimulationGroup:
         if parent:
             pc.Parent = parent
         exo = exo if exo else dict()
-
-        for k, v in exo.items():
-            if k in self.BeFixed:
-                pc[k] = v
+        if exo:
+            pc.Locus.update(exo)
+        # for k, v in exo.items():
+        #     if k in self.BeFixed:
+        #        pc[k] = v
 
         prior = 0
         for loci in self.FixedChain:
-            if isinstance(loci, ExoValueLoci):
-                name = loci.Name
-                try:
-                    pc[name] = exo[name]
-                except KeyError:
-                    raise NameError('Exogenous variable {} not found'.format(name))
-            else:
+            if not isinstance(loci, ExoValueLoci):
                 loci.fill(pc)
                 prior += loci.evaluate(pc)
         pc.LogPrior = prior
@@ -131,6 +130,17 @@ class SimulationGroup:
             for act in acts:
                 pc.ChildrenActors[chd][act].update(pc)
 
+    def set_child_actors(self, pa, group):
+        if group not in self.Children:
+            raise KeyError('No matched group')
+
+        try:
+            return pa.ChildrenActors[group]
+        except KeyError:
+            ca = self.SC[group].actors(None, True)
+            pa.ChildrenActors[group] = ca
+            return ca
+
     def breed(self, nickname, group, pa, exo):
         if group not in self.Children:
             raise KeyError('No matched group')
@@ -142,9 +152,9 @@ class SimulationGroup:
 
         if hoist:
             if group not in pa.ChildrenActors:
-                pa.ChildrenActors[group] = ch_sg.actors(chd)
+                pa.ChildrenActors[group] = ch_sg.actors(chd, True)
         else:
-            chd.Actors = ch_sg.actors(chd)
+            chd.Actors = ch_sg.actors(chd, False)
 
         return chd
 

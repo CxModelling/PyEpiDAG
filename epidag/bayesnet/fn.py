@@ -136,7 +136,8 @@ def define_node(k, links):
 def form_hierarchy(bn, hie=None, root=None):
     """
 
-    :param bn: epidag.BayesNet, a Bayesian Network
+    :param bn: a Bayesian Network
+    :type: BayesNet
     :param hie: hierarchical structure of the nodes of bn
     :param root: name of root group
     :return: A tree structure with NodeGroup
@@ -213,12 +214,15 @@ def analyse_node_type(bn, root=None, report=False):
         return isinstance(nod, ValueLoci) or isinstance(nod, ExoValueLoci)
 
     res = dict()
-    must_fixed = [k for k, v in g.nodes().items() if no_randomness(v['loci'])]
+    must_fixed = [k for k, v in g.nodes().items() if isinstance(v['loci'], ValueLoci)]
+    exogenous = [k for k, v in g.nodes().items() if isinstance(v['loci'], ExoValueLoci)]
 
     def fn(ng, ind=0):
-        fix, ran, act = list(), list(), list()
+        exo, fix, ran, act = list(), list(), list(), list()
         for node in ng.Nodes:
-            if node in must_fixed:
+            if node in exogenous:
+                exo.append(node)
+            elif node in must_fixed:
                 fix.append(node)
             elif node in leaves:
                 act.append(node)
@@ -227,9 +231,10 @@ def analyse_node_type(bn, root=None, report=False):
             else:
                 fix.append(node)
 
-        res[ng.Name] = fix, ran, act
+        res[ng.Name] = exo, fix, ran, act
         if report:
             print('{}Group {}'.format('--' * ind, ng.Name))
+            print('{}Exogenous    : {}'.format('  ' * ind, exo))
             print('{}Must be fixed: {}'.format('  ' * ind, fix))
             print('{}Can be random: {}'.format('  ' * ind, ran))
             print('{}Can be actors: {}'.format('  ' * ind, act))
@@ -245,7 +250,8 @@ def formulate_blueprint(bn, root=None, random=None, out=None):
     """
     a blueprint of a simulation model based on given a Bayesian network.
     It describes every node in the network as 1) fixed variable, 2) random variable, 3) exposed distribution
-    :param bn: epidag.BayesNet, a Bayesian Network
+    :param bn: a Bayesian Network
+    :type bn: BayesNet
     :param root: root node group
     :param random: nodes with random effects within an individual
     :param out: nodes can be used in simulation model
@@ -253,11 +259,12 @@ def formulate_blueprint(bn, root=None, random=None, out=None):
     """
     suggest = analyse_node_type(bn, root, report=False)
     random = random if random else list()
-    out = out if out else set.union(*[set(act) for (_, _, act) in suggest.values()])
+    out = out if out else set.union(*[set(act) for (_, _, _, act) in suggest.values()])
     out = [o for o in out if o not in random]
 
     approved = dict()
-    for k, (fs, rs, cs) in suggest.items():
+    for k, (es, fs, rs, cs) in suggest.items():
+        aes = list(es)
         afs = list(fs)
 
         ars = list()
@@ -276,7 +283,7 @@ def formulate_blueprint(bn, root=None, random=None, out=None):
             else:
                 afs.append(c)
 
-        approved[k] = afs, ars, acs
+        approved[k] = aes, afs, ars, acs
     # todo detect unwilling changes
     return approved
 
