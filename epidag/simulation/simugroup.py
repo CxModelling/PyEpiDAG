@@ -97,9 +97,6 @@ class SimulationGroup:
         exo = exo if exo else dict()
         if exo:
             pc.Locus.update(exo)
-        # for k, v in exo.items():
-        #     if k in self.BeFixed:
-        #        pc[k] = v
 
         prior = 0
         for loci in self.FixedChain:

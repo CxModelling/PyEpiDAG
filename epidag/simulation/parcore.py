@@ -83,7 +83,7 @@ class ParameterCore(Gene):
         except KeyError:
             try:
                 actor = self.Parent.ChildrenActors[self.SG.Name][sampler]
-            except AttributeError or KeyError:
+            except (AttributeError, KeyError):
                 raise KeyError('No {} found'.format(sampler))
 
         return Sampler(actor, self)
@@ -177,9 +177,7 @@ class ParameterCore(Gene):
         except KeyError:
             try:
                 return self.Parent[item]
-            except AttributeError:
-                raise KeyError('{} not found'.format(item))
-            except KeyError:
+            except (AttributeError, KeyError, TypeError):
                 raise KeyError('{} not found'.format(item))
 
     def deep_print(self, i=0):

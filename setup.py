@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='PyEpiDAG',
-    version='1.2.3',
+    version='1.3.0',
     packages=['epidag',
               'epidag.factory',
               'epidag.bayesnet',

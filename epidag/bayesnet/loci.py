@@ -155,10 +155,10 @@ class FunctionLoci(Loci):
         return self.Func.Expression
 
     def sample(self, pas=None):
-        loc = {pa: pas[pa] for pa in self.Parents}
         try:
+            loc = {pa: pas[pa] for pa in self.Parents}
             return self.Func.execute(loc)
-        except NameError:
+        except (NameError, KeyError):
             raise KeyError('Parent node not found')
 
     def evaluate(self, pas=None):

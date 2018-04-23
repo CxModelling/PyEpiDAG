@@ -199,10 +199,13 @@ def analyse_node_type(bn, root=None, report=False):
     A node which can be an actor must be a leaf of the given DAG.
     A node which can carry stochastic effects must not be an ancestor of nodes in lower models.
 
-    :param bn: epidag.BayesNet, a Bayesian Network
+    :param bn: BayesNet, a Bayesian Network
+    :param bn: BayesNet
     :param root: root node group
     :param report: True if report print needed
-    :return: dict, key = Group name, value = (Should be fixed, Can be random, Can be actors)
+    :type report: bool
+    :return: key = Group name, value = (Should be fixed, Can be random, Can be actors)
+    :rtype: dict
     """
     g = bn.DAG
     leaves = bn.LeafNodes
@@ -210,34 +213,41 @@ def analyse_node_type(bn, root=None, report=False):
     if not root:
         root = form_hierarchy(bn)
 
-    def no_randomness(nod):
-        return isinstance(nod, ValueLoci) or isinstance(nod, ExoValueLoci)
-
     res = dict()
     must_fixed = [k for k, v in g.nodes().items() if isinstance(v['loci'], ValueLoci)]
     exogenous = [k for k, v in g.nodes().items() if isinstance(v['loci'], ExoValueLoci)]
 
     def fn(ng, ind=0):
-        exo, fix, ran, act = list(), list(), list(), list()
+        exo, fix, fr, fra, ra, rd = list(), list(), list(), list(), list(), list()
         for node in ng.Nodes:
             if node in exogenous:
                 exo.append(node)
             elif node in must_fixed:
                 fix.append(node)
-            elif node in leaves:
-                act.append(node)
-            elif nx.descendants(g, node) <= ng.Nodes:
-                ran.append(node)
             else:
-                fix.append(node)
+                des = nx.descendants(g, node)
+                ans = nx.ancestors(g, node)
+                if des:
+                    if des <= ng.Nodes:
+                        if set.intersection(ans, exogenous):
+                            rd.append(node)
+                        else:
+                            fr.append(node)
+                    else:
+                        fix.append(node)
+                else:
+                    if set.intersection(ans, exogenous):
+                        ra.append(node)
+                    else:
+                        fra.append(node)
 
-        res[ng.Name] = exo, fix, ran, act
+        res[ng.Name] = exo, fix, fr, fra, ra, rd
         if report:
             print('{}Group {}'.format('--' * ind, ng.Name))
             print('{}Exogenous    : {}'.format('  ' * ind, exo))
-            print('{}Must be fixed: {}'.format('  ' * ind, fix))
-            print('{}Can be random: {}'.format('  ' * ind, ran))
-            print('{}Can be actors: {}'.format('  ' * ind, act))
+            print('{}Can be fixed: {}'.format('  ' * ind, fix + fr + fra))
+            print('{}Can be random: {}'.format('  ' * ind, fr + fra + ra + rd))
+            print('{}Can be actors: {}'.format('  ' * ind, fra + ra))
 
         for chd in ng.Children:
             fn(chd, ind + 1)
@@ -259,32 +269,38 @@ def formulate_blueprint(bn, root=None, random=None, out=None):
     """
     suggest = analyse_node_type(bn, root, report=False)
     random = random if random else list()
-    out = out if out else set.union(*[set(act) for (_, _, _, act) in suggest.values()])
+    out = out if out else set.union(*[set(fra + ra) for (_, _, _, fra, ra, _) in suggest.values()])
     out = [o for o in out if o not in random]
 
     approved = dict()
-    for k, (es, fs, rs, cs) in suggest.items():
-        aes = list(es)
-        afs = list(fs)
-
-        ars = list()
-        for r in rs:
+    for k, (exo, fix, fr, fra, ra, rd) in suggest.items():
+        aes = list(exo)
+        afs = list(fix)
+        ars = list(rd)
+        acs = list()
+        for r in fr:
             if r in random:
                 ars.append(r)
             else:
                 afs.append(r)
 
-        acs = list()
-        for c in cs:
-            if c in out:
-                acs.append(c)
-            elif c in random:
-                ars.append(c)
+        for r in fra:
+            if r in out:
+                acs.append(r)
+            elif r in random:
+                ars.append(r)
             else:
-                afs.append(c)
+                afs.append(r)
+
+        for r in ra:
+            if r in out:
+                acs.append(r)
+            elif r in random:
+                ars.append(r)
+            else:
+                raise(TypeError('{} can not be fixed'.format(r)))
 
         approved[k] = aes, afs, ars, acs
-    # todo detect unwilling changes
     return approved
 
 

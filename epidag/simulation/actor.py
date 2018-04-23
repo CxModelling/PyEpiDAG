@@ -20,6 +20,7 @@ class CompoundActor(SimulationActor):
 
     def sample(self, pas=None, **kwargs):
         pas = dict(pas) if pas else dict()
+        pas.update(kwargs)
         for loc in self.Flow:
             pas[loc.Name] = loc.sample(pas)
         return self.Loci.sample(pas)
@@ -43,6 +44,7 @@ class SingleActor(SimulationActor):
 
     def sample(self, pas=None, **kwargs):
         pas = dict(pas) if pas else dict()
+        pas.update(kwargs)
         return self.Loci.sample(pas)
 
     def __repr__(self):
