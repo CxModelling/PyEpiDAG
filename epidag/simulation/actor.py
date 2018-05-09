@@ -36,6 +36,9 @@ class CompoundActor(SimulationActor):
     def __repr__(self):
         return '{} ({})'.format(self.Field, '->'.join(f.Name for f in self.Flow))
 
+    def __str__(self):
+        return '->'.join(f.Name for f in self.Flow)
+
 
 class SingleActor(SimulationActor):
     def __init__(self, field, di):
@@ -49,6 +52,9 @@ class SingleActor(SimulationActor):
 
     def __repr__(self):
         return '{} ({})'.format(self.Field, self.Loci.Func)
+
+    def __str__(self):
+        return str(self.Loci.Func)
 
 
 class FrozenSingleActor(SimulationActor):
@@ -64,7 +70,10 @@ class FrozenSingleActor(SimulationActor):
         self.Dist = self.Loci.get_distribution(pas)
 
     def __repr__(self):
-        return '{} ({})'.format(self.Field, self.Dist.Dist)
+        return '{} ({})'.format(self.Field, self.Dist.Name)
+
+    def __str__(self):
+        return self.Dist.Name
 
 
 class Sampler:

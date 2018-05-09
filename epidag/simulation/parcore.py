@@ -227,6 +227,8 @@ class ParameterCore(Gene):
         print('{} ({})'.format(self.Nickname, self))
 
     def clone(self, copy_sc=False):
+        if self.Parent:
+            raise AttributeError('This is not the root')
         if copy_sc:
             sc = self.SG.SC.clone()
             sg = sc.SGs[self.Group]
@@ -234,4 +236,5 @@ class ParameterCore(Gene):
             sg = self.SG
         pc_new = sg.generate(self.Nickname, dict(self))
         pc_new.LogPrior = self.LogPrior
+        # todo children copy
         return pc_new

@@ -56,3 +56,7 @@ area_proto = pc.get_prototype('area')
 area_proto.print()
 print(area_proto.get_samplers())
 pc.deep_print()
+
+pc_new = pc.clone(copy_sc=True)
+pc_new.deep_print()
+
