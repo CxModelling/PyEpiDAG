@@ -44,9 +44,15 @@ pc_taipei = pc.breed('Taipei', 'area')
 pc_taipei.breed('A1', 'agA')
 pc_taipei.breed('A2', 'agA')
 pc_taipei.breed('B1', 'agB')
-pc_taipei.breed('B2', 'agB')
-
+b2 = pc_taipei.breed('B2', 'agB')
+b2.get_sibling('B3')
 pc.deep_print()
 
 pc.impulse({'b1':100})
+pc.deep_print()
+
+
+area_proto = pc.get_prototype('area')
+area_proto.print()
+print(area_proto.get_samplers())
 pc.deep_print()

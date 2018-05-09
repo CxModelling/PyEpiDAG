@@ -11,8 +11,8 @@ class ParameterCore(Gene):
         self.Nickname = nickname
         self.SG = sg
         self.Parent = None
-        self.Actors = dict()
         self.Children = dict()
+        self.Actors = dict()
         self.ChildrenActors = dict()
 
     @property
@@ -23,14 +23,40 @@ class ParameterCore(Gene):
         """
         Generate an offspring node
         :param nickname: nickname
+        :type nickname: str
         :param group: target group of new parameter node
+        :type group: str
         :param exo: exogenous variables
-        :return:
+        :type exo:
+        :return: child parameter core
         """
         if nickname in self.Children:
             raise ValueError('{} has already existed'.format(nickname))
         chd = self.SG.breed(nickname, group, self, exo)
         self.Children[nickname] = chd
+        return chd
+
+    def get_sibling(self, nickname, exo=None):
+        """
+        Generate a sibling node
+        :param nickname: nickname
+        :type nickname: str
+        :param exo: exogenous variables
+        :type exo:
+        :return: child parameter core
+        """
+        return self.Parent.breed(nickname, self.Group, exo)
+
+    def get_prototype(self, group, exo=None):
+        """
+        Generate an offspring node
+        :param group: target group of new parameter node
+        :type group: str
+        :param exo: exogenous variables
+        :type exo:
+        :return: prototype parameter core
+        """
+        chd = self.SG.breed('prototype', group, self, exo)
         return chd
 
     def duplicate(self, nickname):
@@ -71,6 +97,17 @@ class ParameterCore(Gene):
             actors = self.Parent.ChildrenActors[self.SG.Name]
             li += list(actors.keys())
         return li
+
+    def get_samplers(self):
+        """
+        Get all the samplers
+        :return: Random variable generators
+        :rtype: dict
+        """
+        samplers = dict(self.Actors)
+        if self.Parent:
+            samplers.update(self.Parent.ChildrenActors[self.SG.Name])
+        return samplers
 
     def get_sampler(self, sampler):
         """
