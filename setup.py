@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='PyEpiDAG',
-    version='1.3.1',
+    version='1.3.2',
     packages=['epidag',
               'epidag.factory',
               'epidag.bayesnet',
@@ -16,5 +16,4 @@ setup(
     author_email='TimeWz667@gmail.com',
     description='Epidemiological inference with DAG',
     install_requires=['pandas', 'networkx', 'astunparse', 'numpy', 'scipy', 'matplotlib']
-
 )
