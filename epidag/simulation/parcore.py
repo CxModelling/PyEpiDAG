@@ -1,5 +1,5 @@
 from epidag.bayesnet import Gene
-from epidag.simulation.actor import FrozenSingleActor, Sampler
+from epidag.simulation.actor import FrozenSingleActor, Sampler, CompoundActor
 import networkx as nx
 
 __author__ = 'TimeWz667'
@@ -105,8 +105,10 @@ class ParameterCore(Gene):
         :rtype: dict
         """
         samplers = dict(self.Actors)
-        if self.Parent:
+        try:
             samplers.update(self.Parent.ChildrenActors[self.SG.Name])
+        except AttributeError:
+            pass
         return samplers
 
     def get_sampler(self, sampler):
@@ -187,6 +189,17 @@ class ParameterCore(Gene):
 
         for v in self.Children.values():
             v.__set_response(imp, shocked)
+
+    def freeze(self, exo=None):
+        exo = exo if exo else dict()
+        for k, s in self.get_samplers().items():
+            if isinstance(s, CompoundActor):
+                self.Locus.update(s.sample_with_mediators(self.Locus, **exo))
+            else:
+                self.Locus[k] = s.sample(self.Locus, **exo)
+
+    def __dict__(self):
+        return dict(self.Locus)
 
     def reset_sc(self, sc):
         self.SG = sc[self.SG.Name]

@@ -25,8 +25,9 @@ class CompoundActor(SimulationActor):
             pas[loc.Name] = loc.sample(pas)
         return self.Loci.sample(pas)
 
-    def sample_with_mediators(self, pas=None):
+    def sample_with_mediators(self, pas=None, **kwargs):
         pas = dict(pas) if pas else dict()
+        pas.update(kwargs)
         res = dict()
         for loc in self.Flow:
             res[loc.Name] = loc.sample(pas)

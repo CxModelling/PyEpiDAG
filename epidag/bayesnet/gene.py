@@ -32,6 +32,8 @@ class Gene:
         return g
 
     def __repr__(self):
+        if not self.Locus:
+            return 'empty'
         loc = [('{}: {:g}' if isinstance(v, float) else '{}: {}').format(k, v) for k, v in self.Locus.items()]
         return ", ".join(loc)
 

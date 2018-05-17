@@ -269,7 +269,11 @@ def formulate_blueprint(bn, root=None, random=None, out=None):
     """
     suggest = analyse_node_type(bn, root, report=False)
     random = random if random else list()
-    out = out if out else set.union(*[set(fra + ra) for (_, _, _, fra, ra, _) in suggest.values()])
+    if out is None:
+        out = set.union(*[set(fra + ra) for (_, _, _, fra, ra, _) in suggest.values()])
+    elif len(out) is 0:
+        out = []
+
     out = [o for o in out if o not in random]
 
     approved = dict()

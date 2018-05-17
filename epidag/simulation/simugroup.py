@@ -92,7 +92,7 @@ class SimulationGroup:
         :return:
         """
         pc = ParameterCore(nickname, self, None, 0)
-        if parent:
+        if parent is not None:
             pc.Parent = parent
         exo = exo if exo else dict()
         if exo:
@@ -152,7 +152,6 @@ class SimulationGroup:
                 pa.ChildrenActors[group] = ch_sg.actors(chd, True)
         else:
             chd.Actors = ch_sg.actors(chd, False)
-
         return chd
 
     def __repr__(self):

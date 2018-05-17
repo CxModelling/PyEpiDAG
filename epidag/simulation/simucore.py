@@ -11,8 +11,11 @@ def get_simulation_groups(bn, bp, root):
     sgs = dict()
     for k, (es, fs, rs, cs) in bp.items():
         nodes = set(fs + rs + cs + es)
-        pas = set.union(*[set(g.predecessors(node)) for node in nodes])
-        pas = pas - nodes
+        if nodes:
+            pas = set.union(*[set(g.predecessors(node)) for node in nodes])
+            pas = pas - nodes
+        else:
+            pas = set()
         sgs[k] = SimulationGroup(k, fs, rs, cs, es, pas)
 
     def set_children(ng):
