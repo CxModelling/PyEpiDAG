@@ -208,7 +208,6 @@ def analyse_node_type(bn, root=None, report=False):
     :rtype: dict
     """
     g = bn.DAG
-    leaves = bn.LeafNodes
 
     if not root:
         root = form_hierarchy(bn)

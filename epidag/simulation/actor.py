@@ -89,14 +89,14 @@ class Sampler:
         """
         return self.Actor.sample(self.Loc, **kwargs)
 
-    def sample(self, n=1):
+    def sample(self, n=1, **kwargs):
         """
         Sample a list of values
         :param n: integer > 0, size of sampled list
         :return: a list of values
         """
         n = max(n, 1)
-        return [self() for _ in range(n)]
+        return [self(**kwargs) for _ in range(n)]
 
     def __repr__(self):
         return 'Actor {} on {}'.format(repr(self.Actor), self.Loc.Nickname)
