@@ -9,7 +9,8 @@ from epidag.util import parse_function, evaluate_function
 
 __author__ = 'TimeWz667'
 __all__ = ['AbsDistribution', 'SpDouble', 'SpInteger', 'DistributionCentre',
-           'parse_distribution', 'parse_distribution_function', 'execute_distribution']
+           'parse_distribution', 'parse_distribution_function', 'execute_distribution',
+           'CategoricalRV']
 
 
 class AbsDistribution(metaclass=ABCMeta):
