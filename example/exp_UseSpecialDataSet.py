@@ -27,9 +27,9 @@ cpt = ConditionalProbabilityTable(mat, ['Age', 'Sex'], 'Prob')
 
 print(cpt)
 
-print('\nMarginalisation', cpt.marginalise('Age'))
+print('\nMarginalisation\n', cpt.marginalise('Age'))
 
-print('\nConditioning', cpt.condition(Age='O'))
+print('\nConditioning\n', cpt.condition(Age='O'))
 
 print('\nSampling\n', cpt())
 
