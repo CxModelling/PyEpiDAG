@@ -168,5 +168,5 @@ class SimulationGroup:
             'BeFixed': list(self.BeFixed),
             'BeRandom': list(self.BeRandom),
             'BeActors': list(self.BeActors),
-            'Children': [chd.to_json() for chd in self.Children]
+            'Children': list(self.Children)
         }
