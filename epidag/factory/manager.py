@@ -83,6 +83,12 @@ class Creator:
 
         return fil
 
+    def arrange_argument_list(self, args, resource, name=''):
+        fil = list()
+        if self.Arguments[0].Name == 'name':
+
+
+
 
 class Workshop:
     def __init__(self):
@@ -151,9 +157,9 @@ class Workshop:
             return
 
     def from_json(self, js):
-        args = js['Args']
-        if 'Name' in js:
-            args['Name'] = js['Name']
+        args = {k: v for k, v in js['Args'].items()}
+        if 'Name' in js and 'name' not in args:
+            args['name'] = js['Name']
         res = self.Creators[js['Type']].create(args)
         try:
             res.json = js
@@ -168,7 +174,9 @@ class Workshop:
         :raise: KeyError if any required variable lost
         """
         vlds = self.Creators[fn.Function].Arguments
+        vlds = [vld for vld in vlds if vld.Name != 'name']
         args = dict()
+
         for i, arg in enumerate(fn.Arguments):
             try:
                 key = arg['key']
@@ -204,7 +212,11 @@ class Workshop:
         res = creator.create(pars)
         if js:
             try:
-                res.json = bp
+                res.json = {
+                    'Name': bp['Name'],
+                    'Type': bp['Type'],
+                    'Args': [arg for arg in bp['Args'] if arg['key'] != 'Name']
+                }
             except AttributeError:
                 pass
         return res

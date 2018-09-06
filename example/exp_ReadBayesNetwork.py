@@ -18,3 +18,5 @@ bj = dag.bn_script_to_json(scr)
 bn = dag.BayesianNetwork(bj)
 
 print(bn)
+
+print(dag.sample(bn, {'sd': 1}))

@@ -15,11 +15,21 @@ __all__ = ['AbsDistribution', 'SpDouble', 'SpInteger', 'DistributionCentre',
 
 class AbsDistribution(metaclass=ABCMeta):
     def __init__(self, name):
-        self.Name = name
+        self.__name = name
         self.json = None
 
     def __call__(self, **kwargs):
         return self.sample(1, **kwargs)
+
+    @property
+    def Name(self):
+        return self.__name
+
+    @Name.setter
+    def Name(self, name):
+        self.__name = name
+        if self.json:
+            self.json['Name'] = name
 
     @property
     @abstractmethod
@@ -333,7 +343,12 @@ DistributionCentre.register('cat', CategoricalRV, [vld.ProbTab('kv')])
 
 
 def parse_distribution(name, di=None, loc=None):
-    return DistributionCentre.parse(name, di, loc=loc)
+    if not di:
+        di = DistributionCentre.parse(name, loc=loc)
+    else:
+        di = DistributionCentre.parse(di, loc=loc)
+    di.Name = name
+    return di
 
 
 def parse_distribution_function(fn):
@@ -367,6 +382,7 @@ if __name__ == '__main__':
     ]
     dists = [parse_distribution(di) for di in dists]
     for di in dists:
+        print(di)
         print(di.to_json())
         print(di.mean())
 
