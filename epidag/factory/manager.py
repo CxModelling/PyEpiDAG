@@ -1,5 +1,7 @@
+import re
+import inspect
 from epidag.util import parse_function
-from epidag.factory.arguments import ValidationError
+from epidag.factory.arguments import ValidationError, String, NotNull
 
 __author__ = 'TimeWz667'
 __all__ = ['get_workshop']
@@ -17,8 +19,8 @@ class Creator:
             'Args': [arg.to_form(resource) for arg in self.Arguments]
         }
 
-    def create(self, name, args):
-        return self.Class(name, **args)
+    def create(self, args):
+        return self.Class(**args)
 
     def validate_arguments(self, args, resource=None):
         for vld in self.Arguments:
@@ -53,8 +55,11 @@ class Creator:
                     continue
         return fil
 
-    def sort_function_arguments(self, bp, resource):
-        fil = dict()
+    def sort_function_arguments(self, name, bp, resource):
+        fil = {'name': name}
+        if self.Arguments[0].Name == 'name':
+            bp['Args'] = [{'key': 'name', 'value': name}] + bp['Args']
+
         for i, arg in enumerate(bp['Args']):
             try:
                 key = arg['key']
@@ -67,11 +72,11 @@ class Creator:
             try:
                 value = fil[name]
                 vld(value, resource)
-            except ValidationError:
-                return False
+            except ValidationError as e:
+                raise e
             except KeyError:
                 if not vld.Optional:
-                    return False
+                    raise ValidationError('{} not found'.format(name))
                 else:
                     continue
             fil[name] = value
@@ -94,6 +99,21 @@ class Workshop:
         self.Resources = dict()
 
     def register(self, tp, cls, args):
+        sig = inspect.signature(cls)
+        args_map = {arg.Name: arg for arg in args}
+        args = list()
+        for k, v in sig.parameters.items():
+            try:
+                arg = args_map[k]
+            except KeyError:
+                if v.default is sig.empty:
+                    if k == 'name':
+                        arg = String(k, '', 'Name of new instance')
+                    else:
+                        arg = NotNull(k, opt=False)
+                else:
+                    arg = NotNull(k, opt=True)
+            args.append(arg)
         self.Creators[tp] = Creator(tp, cls, args)
 
     def validate(self, js, logger=None):
@@ -114,11 +134,12 @@ class Workshop:
 
     def create(self, js, logger=None):
         try:
-            name = js['Name']
             args = js['Args']
+            if 'Name' in js:
+                args['name'] = js['Name']
             creator = self.Creators[js['Type']]
             args = creator.reform_arguments(args, self.Resources)
-            res = creator.create(name, args)
+            res = creator.create(args)
             try:
                 res.json = js
             except AttributeError:
@@ -130,9 +151,10 @@ class Workshop:
             return
 
     def from_json(self, js):
-        name = js['Name']
         args = js['Args']
-        res = self.Creators[js['Type']].create(name, args)
+        if 'Name' in js:
+            args['Name'] = js['Name']
+        res = self.Creators[js['Type']].create(args)
         try:
             res.json = js
         except AttributeError:
@@ -165,8 +187,9 @@ class Workshop:
     def from_function(self, name, fn, loc=None, js=True, modify=False, sort=False):
         bp = fn.to_blueprint(name, loc) if loc else fn.to_blueprint(name)
         creator = self.Creators[bp['Type']]
+
         if sort:
-            pars = creator.sort_function_arguments(bp, self.Resources)
+            pars = creator.sort_function_arguments(name, bp, self.Resources)
         elif isinstance(bp['Args'], list):
             try:
                 pars = {arg['key']: arg['value'] for arg in bp['Args']}
@@ -174,9 +197,11 @@ class Workshop:
                 raise SyntaxError
         else:
             pars = bp['Args']
+
         if modify:
             pars = creator.reform_arguments(pars, self.Resources)
-        res = creator.create(name, pars)
+
+        res = creator.create(pars)
         if js:
             try:
                 res.json = bp
@@ -184,9 +209,14 @@ class Workshop:
                 pass
         return res
 
-    def parse(self, name, fn=None, loc=None, js=True, modify=False):
-        if not fn:
-            fn = name
+    def parse(self, fn, loc=None, js=True, modify=False):
+        fn = fn.replace(' ', '')
+
+        try:
+            name, fn = re.match(r'\A(\w+)=(\S+)\Z', fn).groups()
+        except AttributeError:
+            name = re.match(r'\A(\w+)', fn).group(1)
+
         return self.from_function(name, parse_function(fn), loc, js, modify, True)
 
     def get_form(self, tp):
@@ -223,8 +253,8 @@ if __name__ == '__main__':
     from collections import namedtuple
     from epidag.factory.arguments import Options, PositiveInteger, Prob
 
-    Ac = namedtuple('A', ('Name', 'n', 'p'))
-    Bc = namedtuple('B', ('Name', 'vs'))
+    Ac = namedtuple('A', ('name', 'n', 'p'))
+    Bc = namedtuple('B', ('name', 'vs'))
 
     manager = Workshop()
     manager.register('A', Ac, [Prob('p'), PositiveInteger('n')])
@@ -251,6 +281,6 @@ if __name__ == '__main__':
     print(manager.get_form('D'))
     print(manager.create({'Name': 'D1', 'Type': 'D', 'Args': {'vs': 'Z'}}))
 
-    print(manager.parse('A2', 'A(0.3, 5)'))
-    print(manager.parse('A3', 'A(n=5, p=0.3)'))
-    print(manager.parse('A4', 'A(n=5, p=0.3*x)', {'x': 0.2}))
+    print(manager.parse('A2=A(5, 0.3)'))
+    print(manager.parse('A3=A(n=5, p=0.3)'))
+    print(manager.parse('A4=A(n=5, p=0.3*x)', {'x': 0.2}))

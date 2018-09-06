@@ -8,8 +8,8 @@ manager = fac.get_workshop('Test')
 print(manager)
 
 # create pseudo classes
-Ac = namedtuple('A', ('Name', 'n', 'p'))
-Bc = namedtuple('B', ('Name', 'vs'))
+Ac = namedtuple('A', ('name', 'n', 'p'))
+Bc = namedtuple('B', ('name', 'vs'))
 
 # add creator in the workshop
 manager.register('A', Ac, [fac.Prob('p'), fac.PositiveInteger('n')])
@@ -40,8 +40,8 @@ print(manager.create({'Name': 'D1', 'Type': 'D', 'Args': {'vs': 'Z'}}))
 
 
 print('\nCreate objects from function syntax')
-print(manager.parse('A2', 'A(0.3, 5)'))
-print(manager.parse('A3', 'A(n=5, p=0.3)'))
-print(manager.parse('A4', 'A(n=5, p=0.3*x)', {'x': 0.2}))
+print(manager.parse('A2=A(5, 0.3)'))
+print(manager.parse('A3=A(n=5, p=0.3)'))
+print(manager.parse('A4=A(n=5, p=0.3*x)', {'x': 0.2}))
 
 
