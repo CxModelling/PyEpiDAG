@@ -9,7 +9,7 @@ from epidag.util import parse_function, evaluate_function
 
 __author__ = 'TimeWz667'
 __all__ = ['AbsDistribution', 'SpDouble', 'SpInteger', 'DistributionCentre',
-           'parse_distribution', 'parse_distribution_function', 'execute_distribution',
+           'parse_distribution',  # 'parse_distribution_function', 'execute_distribution',
            'CategoricalRV']
 
 
@@ -336,31 +336,8 @@ DistributionCentre.register('binom', d_binom, [vld.PositiveInteger('size', defau
 DistributionCentre.register('cat', CategoricalRV, [vld.ProbTab('kv')])
 
 
-def parse_distribution(name, di=None, loc=None):
-    if not di:
-        di = DistributionCentre.parse(name, loc=loc)
-    else:
-        di = DistributionCentre.parse(di, loc=loc)
-    di.Name = name
-    return di
-
-
-def parse_distribution_function(fn):
-    fn = parse_function(fn)
-    DistributionCentre.sort_function_arguments(fn)
-    return fn
-
-
-def parse_evaluate_distribution_function(fn, loc):
-    fn = parse_distribution_function(fn)
-    fn = evaluate_function(fn, loc)
-    return fn
-
-
-def execute_distribution(name, fn=None, loc=None):
-    if not fn:
-        name, fn = name.Source, name
-    return DistributionCentre.from_function(name, fn, loc=loc)
+def parse_distribution(di, loc=None):
+    return DistributionCentre.parse(di, loc=loc)
 
 
 if __name__ == '__main__':

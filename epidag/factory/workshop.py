@@ -1,5 +1,5 @@
 import inspect
-from epidag.util import parse_function
+from epidag.util import parse_function, ParsedFunction
 from epidag.factory.arguments import ValidationError, NotNull
 
 
@@ -172,9 +172,12 @@ class Workshop:
         :return: object of f
         """
 
-        fn = fn.replace(' ', '')
+        if not isinstance(fn, ParsedFunction):
+            fn = fn.replace(' ', '')
+            pf = parse_function(fn)
+        else:
+            pf = fn
 
-        pf = parse_function(fn)
         tp = pf.Function
         try:
             creator = self.Creators[tp]
@@ -226,11 +229,21 @@ if __name__ == '__main__':
     Ac = namedtuple('A', ('n', 'p', ))
     Bc = namedtuple('B', ('vs', ))
 
+    class Ec:
+        def __init__(self, x):
+            self.Name = None
+            self.X = x
+            self.source = None
+            self.json = None
+
+
     manager = Workshop()
     manager.register('A', Ac, [Prob('p'), PositiveInteger('n')])
     manager.register('B', Bc, [Options('vs', ['Z', 'X'])])
     manager.register('C', Bc, [Options('vs', 'ZX')])
     manager.register('D', Bc, [Options('vs', {'Z': 1, 'X': 2})])
+    manager.register('E', Ec, [PositiveInteger('x')], ['Name'])
+
     manager.append_resource('ZX', ['Z', 'X'])
 
     print(manager.list())
@@ -254,3 +267,5 @@ if __name__ == '__main__':
     print(manager.parse('A(5, 0.3)'))
     print(manager.parse('A(n=5, p=0.3)'))
     print(manager.parse('A(n=5, p=0.3*x)', {'x': 0.2}))
+
+    print(manager.parse('E(5, Name="x")').json)

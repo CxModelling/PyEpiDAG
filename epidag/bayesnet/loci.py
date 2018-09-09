@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from epidag import MATH_FUNC, parse_math_expression, parse_function
-from epidag.bayesnet.distribution import parse_distribution_function, execute_distribution
+from epidag.bayesnet.distribution import parse_distribution
 
 __author__ = 'TimeWz667'
 __all__ = ['ValueLoci', 'ExoValueLoci', 'DistributionLoci', 'FunctionLoci', 'PseudoLoci']
@@ -104,7 +104,7 @@ class ExoValueLoci(Loci):
 class DistributionLoci(Loci):
     def __init__(self, name, val, pas=None):
         Loci.__init__(self, name)
-        self.Func = parse_distribution_function(val)
+        self.Func = parse_function(val)
         self.__parents = pas if pas else self.Func.Parents
 
     @property
@@ -117,7 +117,7 @@ class DistributionLoci(Loci):
 
     def get_distribution(self, pas=None):
         loc = {pa: pas[pa] for pa in self.Parents}
-        return execute_distribution(self.Func, loc=loc)
+        return parse_distribution(self.Func, loc=loc)
 
     def sample(self, pas=None):
         return self.get_distribution(pas).sample()

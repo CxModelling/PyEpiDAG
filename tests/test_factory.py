@@ -32,17 +32,12 @@ class TestParseFunction(unittest.TestCase):
         self.assertListEqual(fn.get_arguments()[0]['value'], [2, "hh", 4])
 
     def test_two_step(self):
-        fn = dist.parse_distribution_function('gamma(shape=0.01, rate=0.02)')
+        fn = dag.parse_function('gamma(shape=0.01, rate=0.02)')
         self.assertEqual(fn.Function, 'gamma')
         arg_keys = [arg['key'] for arg in fn.get_arguments()]
         self.assertListEqual(arg_keys, ['shape', 'rate'])
-        di = dist.execute_distribution('test', fn)
+        di = dist.parse_distribution(fn)
         self.assertEqual(di.mean(), 0.5)
-
-        fn = dist.parse_distribution_function('gamma(rate=0.02, shape=0.01)')
-        self.assertEqual(fn.Function, 'gamma')
-        arg_keys = [arg['key'] for arg in fn.get_arguments()]
-        self.assertListEqual(arg_keys, ['shape', 'rate'])
 
 
 class TestArguments(unittest.TestCase):
