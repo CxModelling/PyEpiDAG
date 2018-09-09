@@ -35,6 +35,7 @@ class Argument(metaclass=ABCMeta):
         self.Description = des if des else name
         self.Type = tp
         self.Optional = bool(opt)
+        self.Default = None
 
     def __call__(self, value, resource=None):
         return self.check(value, resource)

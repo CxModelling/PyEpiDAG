@@ -14,22 +14,12 @@ __all__ = ['AbsDistribution', 'SpDouble', 'SpInteger', 'DistributionCentre',
 
 
 class AbsDistribution(metaclass=ABCMeta):
-    def __init__(self, name):
-        self.__name = name
+    def __init__(self):
+        self.source = None
         self.json = None
 
     def __call__(self, **kwargs):
         return self.sample(1, **kwargs)
-
-    @property
-    def Name(self):
-        return self.__name
-
-    @Name.setter
-    def Name(self, name):
-        self.__name = name
-        if self.json:
-            self.json['Name'] = name
 
     @property
     @abstractmethod
@@ -66,17 +56,23 @@ class AbsDistribution(metaclass=ABCMeta):
         pass
 
     def to_json(self):
-        return self.json
+        if self.json:
+            return self.json
+        else:
+            raise AttributeError('Undefined JSON format')
 
     def __repr__(self):
-        return self.Name
+        if self.source:
+            return self.source
+        else:
+            return id(self)
 
     __str__ = __repr__
 
 
 class SpDouble(AbsDistribution):
-    def __init__(self, name, dist):
-        AbsDistribution.__init__(self, name)
+    def __init__(self, dist):
+        AbsDistribution.__init__(self)
         self.Dist = dist
 
     def sample(self, n=1, **kwargs):
@@ -101,15 +97,10 @@ class SpDouble(AbsDistribution):
     def std(self):
         return self.Dist.std()
 
-    def __repr__(self):
-        return self.Name
-
-    __str__ = __repr__
-
 
 class SpInteger(AbsDistribution):
-    def __init__(self, name, dist):
-        AbsDistribution.__init__(self, name)
+    def __init__(self, dist):
+        AbsDistribution.__init__(self)
         self.Dist = dist
 
     def sample(self, n=1, **kwargs):
@@ -135,19 +126,14 @@ class SpInteger(AbsDistribution):
     def std(self):
         return self.Dist.std()
 
-    def __repr__(self):
-        return self.Name
-
-    __str__ = __repr__
-
 
 class Const(AbsDistribution):
-    def __init__(self, name, k):
+    def __init__(self, k):
         """
         Distribution function always draws a constant value
         :param k: value
         """
-        AbsDistribution.__init__(self, name)
+        AbsDistribution.__init__(self)
         self.K = k
 
     @property
@@ -155,12 +141,20 @@ class Const(AbsDistribution):
         return [self.K, self.K]
 
     @property
+    def Upper(self):
+        return self.K
+
+    @property
+    def Lower(self):
+        return self.K
+
+    @property
     def Type(self):
         return type(self.K)
 
     def sample(self, n=1, **kwargs):
         if n > 1:
-            return np.array([self.K] * n)
+            return np.full(n, self.K)
         return self.K
 
     def logpdf(self, v):
@@ -178,12 +172,12 @@ class CategoricalRV(AbsDistribution):
     Generate Categorical data with respect to a specific probability distribution.
     """
 
-    def __init__(self, name, kv):
+    def __init__(self, kv):
         """
 
         :param kv: a dictionary with keys of category names and values of probabilities.
         """
-        AbsDistribution.__init__(self, name)
+        AbsDistribution.__init__(self)
         self.kv = kv
         self.cat = [k for k in kv.keys()]
         self.p = np.array(list(kv.values()))
@@ -191,7 +185,7 @@ class CategoricalRV(AbsDistribution):
 
     @property
     def Dist(self):
-        return self.Name
+        return "Cat([{}])".format(','.join(self.cat))
 
     @property
     def Interval(self):
@@ -222,12 +216,12 @@ class CategoricalRV(AbsDistribution):
 
 
 class EmpiricalRV(AbsDistribution):
-    def __init__(self, name, x, y):
+    def __init__(self, x, y):
         x, y = np.array(x), np.array(y)
         self.X = x
         self.Y = y
         self.__int = (x.min(), x.max())
-        AbsDistribution.__init__(self, name)
+        AbsDistribution.__init__(self)
         self.Fn = interp1d(y.cumsum()/y.sum(), x, bounds_error=False, fill_value=(x.min(), x.max()))
         self.Logpdf = interp1d(x, y, bounds_error=False, fill_value=0)
 
@@ -257,73 +251,73 @@ DistributionCentre = get_workshop('Distributions')
 DistributionCentre.register('k', Const, [vld.Float('k')])
 
 
-def d_gamma(name, shape, rate):
-    return SpDouble(name, sts.gamma(a=shape, scale=1/rate))
+def d_gamma(shape, rate):
+    return SpDouble(sts.gamma(a=shape, scale=1/rate))
 
 
 DistributionCentre.register('gamma', d_gamma, [vld.PositiveFloat('shape', default=1.0),
                                                vld.PositiveFloat('rate', default=1.0)])
 
 
-def d_exp(name, rate):
-    return SpDouble(name, sts.expon(scale=1/rate))
+def d_exp(rate):
+    return SpDouble(sts.expon(scale=1/rate))
 
 
 DistributionCentre.register('exp', d_exp, [vld.PositiveFloat('rate', default=1.0)])
 
 
-def d_lnorm(name, meanlog, sdlog):
-    return SpDouble(name, sts.lognorm(s=meanlog, scale=np.exp(sdlog)))
+def d_lnorm(meanlog, sdlog):
+    return SpDouble(sts.lognorm(s=meanlog, scale=np.exp(sdlog)))
 
 
 DistributionCentre.register('lnorm', d_lnorm, [vld.PositiveFloat('meanlog', default=0),
                                                vld.PositiveFloat('sdlog', default=1.0)])
 
 
-def d_unif(name, mi, ma):
-    return SpDouble(name, sts.uniform(mi, ma-mi))
+def d_unif(mi, ma):
+    return SpDouble(sts.uniform(mi, ma-mi))
 
 
 DistributionCentre.register('unif', d_unif, [vld.Float('mi', default=0),
                                              vld.Float('ma', default=1.0)])
 
 
-def d_chi2(name, df):
-    return SpDouble(name, sts.chi2(df))
+def d_chi2(df):
+    return SpDouble(sts.chi2(df))
 
 
 DistributionCentre.register('chisq', d_chi2, [vld.PositiveFloat('df', default=1.0)])
 
 
-def d_beta(name, shape1, shape2):
-    return SpDouble(name, sts.beta(shape1, shape2))
+def d_beta(shape1, shape2):
+    return SpDouble(sts.beta(shape1, shape2))
 
 
 DistributionCentre.register('beta', d_beta, [vld.PositiveFloat('shape1', default=1.0),
                                              vld.PositiveFloat('shape2', default=1.0)])
 
 
-def d_invgamma(name, a, rate):
-    return SpDouble(name, sts.invgamma(a=a, scale=1/rate))
+def d_invgamma(a, rate):
+    return SpDouble(sts.invgamma(a=a, scale=1/rate))
 
 
 DistributionCentre.register('invgamma', d_invgamma, [vld.PositiveFloat('a', default=1.0),
                                                      vld.PositiveFloat('rate', default=1.0)])
 
 
-def d_norm(name, mean, sd):
-    return SpDouble(name, sts.norm(loc=mean, scale=sd))
+def d_norm(mean, sd):
+    return SpDouble(sts.norm(loc=mean, scale=sd))
 
 
 DistributionCentre.register('norm', d_norm, [vld.Float('mean', default=0),
                                              vld.PositiveFloat('sd', default=1.0)])
 
 
-def d_triangle(name, a, m, b):
+def d_triangle(a, m, b):
     x = [a, m, b]
     x.sort()
     a, m, b = x
-    return SpDouble(name, sts.triang(loc=a, scale=b - a, c=(m - a) / (b - a)))
+    return SpDouble(sts.triang(loc=a, scale=b - a, c=(m - a) / (b - a)))
 
 
 DistributionCentre.register('triangle', d_triangle, [vld.PositiveFloat('a', default=0),
@@ -331,8 +325,8 @@ DistributionCentre.register('triangle', d_triangle, [vld.PositiveFloat('a', defa
                                                      vld.PositiveFloat('b', default=1.0)])
 
 
-def d_binom(name, size, prob):
-    return SpInteger(name, sts.binom(n=size, p=prob))
+def d_binom(size, prob):
+    return SpInteger(sts.binom(n=size, p=prob))
 
 
 DistributionCentre.register('binom', d_binom, [vld.PositiveInteger('size', default=1),
@@ -386,7 +380,7 @@ if __name__ == '__main__':
         print(di.to_json())
         print(di.mean())
 
-    dist_cat = parse_distribution('cat({"M": 3411,"O": kk,"Y": 52})', loc={'kk': 3500})
+    dist_cat = parse_distribution('cat({"M": 411,"O": kk,"Y": 52})', loc={'kk': 3500})
     from collections import Counter
     print(dist_cat.to_json())
     print(Counter(dist_cat.sample(10000)))
