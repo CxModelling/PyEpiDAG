@@ -22,10 +22,7 @@ Pcore BMI {
 }
 '''
 
-bj = dag.bn_script_to_json(scr)
-print(bj)
-bn = dag.BayesianNetwork(bj)
-
+bn = dag.bayes_net_from_script(scr)
 
 hie = {
     'country': ['area'],

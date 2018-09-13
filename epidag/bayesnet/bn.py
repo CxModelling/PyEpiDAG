@@ -49,6 +49,7 @@ def form_script(bn):
 
 class BayesianNetwork:
     def __init__(self, name):
+        self.Name = name
         self.DAG = nx.DiGraph()
         self.json = None
         self.script = None
@@ -56,32 +57,6 @@ class BayesianNetwork:
         self.__roots = None
         self.__leaves = None
         self.__exo = None
-
-        if isinstance(name, dict):  # json format
-            js = name
-            self.Name = js['Name']
-            for node in js['Nodes']:
-                self.append_from_js(node)
-            self.json = js
-            # self.complete()
-        elif '\n' in name:  # script format
-            lines = name.split('/n')
-            lines = [line.replace(' ', '') for line in lines]
-            for line in lines:
-                mat = re.match(r'pcore(\w+){', line, re.I)
-                if mat:
-                    self.Name = mat.group(1)
-                    break
-            else:
-                raise dag.ScriptException('Unknown script format')
-            for line in lines:
-                try:
-                    self.append_from_definition(line)
-                except dag.ScriptException:
-                    continue
-            # self.complete()
-        else:
-            self.Name = name
 
     def append_loci(self, loci, **kwargs):
         if nx.is_frozen(self.DAG):

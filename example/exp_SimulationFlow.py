@@ -14,7 +14,7 @@ PCore Exp2 {
 }
 '''
 
-bn = dag.bn_from_script(script)
+bn = dag.bayes_net_from_script(script)
 sc = dag.as_simulation_core(bn)
 sg = sc.generate('exp2')
 

@@ -9,7 +9,7 @@ __all__ = ['TransitionMatrix', 'ConditionalProbabilityTable']
 class TransitionMatrix(AbsDataSet):
     def __init__(self, mat):
         AbsDataSet.__init__(self, mat)
-        self.Transitions = {k: CategoricalRV(k, dict(ir)) for k, ir in mat.iterrows()}
+        self.Transitions = {k: CategoricalRV(dict(ir)) for k, ir in mat.iterrows()}
         self.StateFrom = list(mat.index)
         self.StateTo = list(mat.columns)
 
@@ -56,7 +56,7 @@ class ConditionalProbabilityTable(AbsDataSet):
             p = self.Ps[i]
             self.InvGroups[key] = p
             self.Groups[key] = {x: ir[x] for x in indices}
-        self.Sampler = CategoricalRV(i_prob, self.InvGroups)
+        self.Sampler = CategoricalRV(self.InvGroups)
 
     def __call__(self):
         return self.Groups[self.Sampler()]

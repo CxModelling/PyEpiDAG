@@ -14,7 +14,7 @@ class TimeSeries(AbsDataSet):
         xs = np.array(mat[i_x])
         self.IndexTime = i_time
         self.IndexX = i_x
-        self.Line = interp1d(x=ts, y=xs,kind=kind, bounds_error=False, fill_value=(xs[0], xs[-1]))
+        self.Line = interp1d(x=ts, y=xs, kind=kind, bounds_error=False, fill_value=(xs[0], xs[-1]))
 
     def __call__(self, t):
         return self.Line(t)
@@ -54,7 +54,7 @@ class TimeSeriesProbabilityTable(AbsDataSet):
         for i, ir in mat.iterrows():
             ps = {x: ir[x] for x in i_xs}
             ti = ir[i_time]
-            self.PTs[ti] = CategoricalRV(ti, ps)
+            self.PTs[ti] = CategoricalRV(ps)
 
     def __call__(self, t):
         ti = self.Ts(t) + 0

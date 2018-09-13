@@ -14,8 +14,7 @@ scr = '''
     }
     '''
 
-bj = dag.bn_script_to_json(scr)
-bn = dag.BayesianNetwork(bj)
+bn = dag.bayes_net_from_script(scr)
 
 print(bn)
 
