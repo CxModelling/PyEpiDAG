@@ -42,11 +42,10 @@ class CompoundActor(SimulationActor):
             try:
                 parents[p] = pas[p]
             except KeyError:
-                pass
-            try:
-                parents[p] = kwargs[p]
-            except KeyError:
-                pass
+                try:
+                    parents[p] = kwargs[p]
+                except KeyError:
+                    pass
 
         res = dict()
         for loc in self.Flow:
@@ -73,11 +72,10 @@ class SingleActor(SimulationActor):
             try:
                 parents[p] = pas[p]
             except KeyError:
-                pass
-            try:
-                parents[p] = kwargs[p]
-            except KeyError as e:
-                raise e
+                try:
+                    parents[p] = kwargs[p]
+                except KeyError as e:
+                    raise e
         return self.Loci.sample(parents)
 
     def __repr__(self):

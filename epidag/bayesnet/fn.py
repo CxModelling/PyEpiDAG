@@ -272,7 +272,7 @@ def formulate_blueprint(bn, root=None, random=None, out=None):
     random = random if random else list()
     if out is None:
         out = set.union(*[set(fra + ra) for (_, _, _, fra, ra, _) in suggest.values()])
-        out = set([bn.is_rv(o) for o in out])
+        out = set([o for o in out if bn.is_rv(o)])
     elif len(out) is 0:
         out = []
 

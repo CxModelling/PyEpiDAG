@@ -150,7 +150,7 @@ class BayesianNetwork:
         return self.to_script()
 
     def __repr__(self):
-        return
+        return 'BayesNet(Name: {}, Nodes: {})'.format(self.Name, self.Order)
 
     def plot(self):
         pos = graphviz_layout(self.DAG, prog='dot')
