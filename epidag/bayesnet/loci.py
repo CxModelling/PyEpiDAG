@@ -1,9 +1,11 @@
 from abc import ABCMeta, abstractmethod
-from epidag import MATH_FUNC, parse_math_expression, parse_function
+import re
+from epidag import MATH_FUNC, parse_math_expression, parse_function, ScriptException
 from epidag.bayesnet.distribution import parse_distribution
 
 __author__ = 'TimeWz667'
-__all__ = ['ValueLoci', 'ExoValueLoci', 'DistributionLoci', 'FunctionLoci', 'PseudoLoci']
+__all__ = ['ValueLoci', 'ExoValueLoci', 'DistributionLoci', 'FunctionLoci', 'PseudoLoci',
+           'loci_from_json', 'parse_loci']
 
 
 class Loci(metaclass=ABCMeta):
@@ -212,6 +214,49 @@ class PseudoLoci(Loci):
     __str__ = __repr__
 
 
+def loci_from_json(js):
+    name, tp = js['Name'], js['Type']
+    if tp == 'Value':
+        return ValueLoci(name, js['Def'])
+    elif tp == 'ExoValue':
+        return ExoValueLoci(name)
+    elif tp == 'Function':
+        return FunctionLoci(name, js['Def'], js['Parents'])
+    elif tp == 'Distribution':
+        return DistributionLoci(name, js['Def'], js['Parents'])
+    elif tp == 'Pseudo':
+        return PseudoLoci(name, js['Def'], js['Parents'])
+    else:
+        raise AttributeError('Unknown format')
+
+
+def parse_loci(df):
+    df = df.replace(' ', '')
+
+    if '#' in df:
+        df, des = re.match(r'\A(\S+)#(\S+)', df).groups()
+    else:
+        des = ''
+
+    if '~' in df:
+        name, loci = re.match(r'\A(\w+)~(\S+)', df).groups()
+        loci = DistributionLoci(name, loci)
+    elif re.match(r'\A\w+=\S+', df):
+        name, loci = re.match(r'\A(\w+)=(\S+)', df).groups()
+        if loci.startswith('f('):
+            loci = PseudoLoci(name, loci)
+        else:
+            try:
+                loci = ValueLoci(name, loci)
+            except NameError:
+                loci = FunctionLoci(name, loci)
+    elif re.match(r'\A\w+\Z', df):
+        loci = ExoValueLoci(df)
+    else:
+        raise ScriptException('Ill-defined variable')
+    return loci, des
+
+
 if __name__ == '__main__':
     d1 = '1/0.01 + exp(k) + u'
     d1 = FunctionLoci('s1', d1)
@@ -230,3 +275,19 @@ if __name__ == '__main__':
     print(d3.Parents)
     print(d3.Func)
     print(d3.to_json())
+    print(loci_from_json(d3.to_json()))
+
+    lc, description = parse_loci(df='x ~ binom(prob=0.5, size=5) # Distribution')
+    print(lc, description)
+
+    lc, description = parse_loci(df='x = exp(3*k)')
+    print(lc, lc.Parents, description)
+
+    lc, description = parse_loci(df='x = f(y, z) # Pseudo function')
+    print(lc, lc.Parents, description)
+
+    lc, description = parse_loci(df='x # Exogenous Variable')
+    print(lc, description)
+
+    lc, description = parse_loci(df='x = 5 # Single Value Variable')
+    print(lc, description)

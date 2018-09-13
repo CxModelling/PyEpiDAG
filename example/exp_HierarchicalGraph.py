@@ -4,7 +4,7 @@ __author__ = 'TimeWz667'
 
 
 scr = '''
-Pcore BMI {
+PCore BMI {
     b0 ~ norm(12, 1)
     b1 = 0.5
     pf ~ beta(8, 20)
@@ -23,8 +23,7 @@ Pcore BMI {
 '''
 
 # Construct a Bayesian network from script
-bj = dag.bn_script_to_json(scr)
-bn = dag.BayesianNetwork(bj)
+bn = dag.bayes_net_from_script(scr)
 
 print(dag.sample(bn, {'sd': 1}))
 

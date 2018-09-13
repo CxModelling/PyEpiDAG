@@ -15,12 +15,12 @@ def sample(bn, cond=None):
     """
     g = bn.DAG
     cond = cond if cond else dict()
-    if any(nod not in cond for nod in bn.ExogenousNodes):
+    if any(nod not in cond for nod in bn.Exo):
         raise ValueError('Exogenous nodes do not fully defined')
 
     res = dict(cond)
 
-    for nod in bn.OrderedNodes:
+    for nod in bn.Order:
         if nod not in res:
             res[nod] = g.nodes[nod]['loci'].sample(res)
     return res

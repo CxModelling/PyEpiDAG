@@ -1,4 +1,5 @@
 import epidag as dag
+from epidag.bayesnet.loci import *
 import re
 import networkx as nx
 from networkx.drawing.nx_agraph import graphviz_layout
@@ -67,17 +68,17 @@ class BayesianNetwork:
 
         for k, v in js['Nodes'].items():
             if v['Type'] is 'Value':
-                loci = dag.ValueLoci(k, v['Def'])
+                lo = ValueLoci(k, v['Def'])
             elif v['Type'] is 'ExoValue':
-                loci = dag.ExoValueLoci(k)
+                lo = ExoValueLoci(k)
             elif v['Type'] is 'Distribution':
-                loci = dag.DistributionLoci(k, v['Def'])
+                lo = DistributionLoci(k, v['Def'])
             elif v['Type'] is 'Pseudo':
-                loci = dag.PseudoLoci(k, v['Def'])
+                lo = PseudoLoci(k, v['Def'])
             else:
-                loci = dag.FunctionLoci(k, v['Def'])
+                lo = FunctionLoci(k, v['Def'])
 
-            self.DAG.add_node(k, loci=loci, **v)
+            self.DAG.add_node(k, loci=lo, **v)
             if 'Parents' not in v:
                 continue
             for pa in v['Parents']:
@@ -95,7 +96,7 @@ class BayesianNetwork:
         self.OrderedNodes = list(nx.topological_sort(self.DAG))
 
     def is_rv(self, node):
-        return isinstance(self[node], dag.DistributionLoci)
+        return isinstance(self[node], DistributionLoci)
 
     def __getitem__(self, item):
         return self.DAG.nodes[item]['loci']

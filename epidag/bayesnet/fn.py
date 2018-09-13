@@ -170,19 +170,19 @@ def form_hierarchy(bn, hie=None, root=None):
             ng0, ng1 = ng1, NodeGroup('Layer {}'.format(i), hi)
             ng0.append_chd(ng1)
     else:
-        root = NodeGroup(root, bn.OrderedNodes)
+        root = NodeGroup(root, bn.Order)
 
     # root.print()
 
     all_fixed = root.get_all()
-    all_floated = [nod for nod in bn.OrderedNodes if nod not in all_fixed]
+    all_floated = [nod for nod in bn.Order if nod not in all_fixed]
 
     all_floated.reverse()
 
     # for nod in bn.ExogenousNodes:
     #    root.catch(nod)
 
-    all_floated = [nod for nod in all_floated] # if nod not in bn.ExogenousNodes]
+    all_floated = [nod for nod in all_floated]  # if nod not in bn.ExogenousNodes]
     for nod in all_floated:
         root.pass_down(nod, g)
 
