@@ -63,7 +63,7 @@ class AbsDistribution(metaclass=ABCMeta):
 
     def __repr__(self):
         if self.source:
-            return self.source
+            return repr(self.source)
         else:
             return id(self)
 

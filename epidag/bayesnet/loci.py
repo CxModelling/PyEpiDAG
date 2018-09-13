@@ -160,8 +160,8 @@ class FunctionLoci(Loci):
         try:
             loc = {pa: pas[pa] for pa in self.Parents}
             return self.Func.execute(loc)
-        except (NameError, KeyError):
-            raise KeyError('Parent node not found')
+        except (NameError, KeyError) as e:
+            raise KeyError('Exogenous variable {} should be defined'.format(e.args[0]))
 
     def evaluate(self, pas=None):
         return 0

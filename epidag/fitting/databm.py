@@ -26,7 +26,7 @@ def as_bayesian_model_frame(data, exo=None, datum_name='entries'):
 
 
 def get_data_shadow(data, bn):
-    node_list = bn.OrderedNodes
+    node_list = bn.Order
     res = dict()
     try:
         res['exogenous'] = [exo for exo in data['exogenous'].keys() if exo in node_list]

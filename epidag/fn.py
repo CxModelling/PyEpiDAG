@@ -41,7 +41,7 @@ def sample_minimally(bn, included, cond=None, sources=True):
     given = list(cond.keys())
 
     suf = dag.get_sufficient_nodes(g, included, given)
-    suf_exo = [nod for nod in bn.ExogenousNodes if nod in suf]
+    suf_exo = [nod for nod in bn.Exo if nod in suf]
 
     for nod in suf_exo:
         if nod not in cond:
@@ -49,7 +49,7 @@ def sample_minimally(bn, included, cond=None, sources=True):
 
     res = dict(cond)
 
-    for nod in bn.OrderedNodes:
+    for nod in bn.Order:
         if nod in suf and nod not in res:
             res[nod] = g.nodes[nod]['loci'].sample(res)
     sinks = {k: v for k, v in res.items() if k in included}
@@ -58,8 +58,6 @@ def sample_minimally(bn, included, cond=None, sources=True):
         return sinks, med
     else:
         return sinks
-
-
 
 def as_causal_diagram(bn):
     return

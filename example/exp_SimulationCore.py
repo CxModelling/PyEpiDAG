@@ -10,7 +10,7 @@ Pcore BMI {
     pf ~ beta(8, 20)
     foodstore ~ binom(100, pf)
     b0r ~ norm(0, .01)
-    ageA ~ norm(20, 3)
+    ageA # ~ norm(20, 3)
     ageB ~ norm(30, 2)
     ps ~ beta(5, 6)
     sexA ~ cat({'m': ps, 'f': 1-ps})
@@ -45,7 +45,7 @@ b2 = pc_taipei.breed('B2', 'agB')
 b2.get_sibling('B3')
 pc.deep_print()
 
-pc.impulse({'b1':100})
+pc.impulse({'b1': 100})
 pc.deep_print()
 
 

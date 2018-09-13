@@ -137,7 +137,7 @@ class BayesianNetwork:
     def sort(self, nodes):
         return [node for node in self.Order if node in nodes]
 
-    def copy(self):
+    def clone(self):
         return bayes_net_from_json(self.to_json())
 
     def to_json(self):
@@ -155,9 +155,6 @@ class BayesianNetwork:
     def plot(self):
         pos = graphviz_layout(self.DAG, prog='dot')
         nx.draw(self.DAG, pos, with_labels=True, arrows=True)
-
-    def clone(self):
-        return BayesianNetwork(self.to_json())
 
 
 def bayes_net_from_script(script):
@@ -181,6 +178,7 @@ def bayes_net_from_script(script):
         except dag.ScriptException:
             continue
     bn.complete()
+    bn.script = script
     return bn
 
 
@@ -201,6 +199,3 @@ def bayes_net_from_json(js):
     bn.__leaves = js['Leaves']
     bn.__exo = js['Exo']
     return bn
-
-
-

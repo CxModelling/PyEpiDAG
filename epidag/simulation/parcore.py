@@ -75,12 +75,14 @@ class ParameterCore(Gene):
         if collect_pars:
             for k, v in self.Parent:
                 self[k] = v
+            self.Actors.update(self.Parent.get_samplers())
         self.Parent = None
 
     def remove_children(self, k):
         """
         Remove a child ParameterCore
         :param k: the name of the child
+        :type k: str
         :return: the removed ParameterCore
         """
         try:
@@ -98,9 +100,11 @@ class ParameterCore(Gene):
             li += list(actors.keys())
         return li
 
-    def get_samplers(self):
+    def get_samplers(self, include_parent=False):
         """
         Get all the samplers
+        :param include_parent: include parent node's samplers or not
+        :type include_parent: bool
         :return: Random variable generators
         :rtype: dict
         """
@@ -109,6 +113,11 @@ class ParameterCore(Gene):
             samplers.update(self.Parent.ChildrenActors[self.SG.Name])
         except AttributeError:
             pass
+        if include_parent:
+            try:
+                samplers.update(self.Parent.get_samplers())
+            except AttributeError:
+                pass
         return samplers
 
     def get_sampler(self, sampler):
@@ -122,8 +131,13 @@ class ParameterCore(Gene):
         except KeyError:
             try:
                 actor = self.Parent.ChildrenActors[self.SG.Name][sampler]
-            except (AttributeError, KeyError):
+            except AttributeError:
                 raise KeyError('No {} found'.format(sampler))
+            except KeyError:
+                try:
+                    actor = self.Parent.get_sampler(sampler)
+                except KeyError as e:
+                    raise e
 
         return Sampler(actor, self)
 
@@ -241,7 +255,7 @@ class ParameterCore(Gene):
 
     def clone(self, copy_sc=False):
         if self.Parent:
-            raise AttributeError('This is not the root')
+            raise AttributeError('This is not the root. Please clone from the root node')
         if copy_sc:
             sc = self.SG.SC.clone()
             sg = sc.SGs[self.Group]

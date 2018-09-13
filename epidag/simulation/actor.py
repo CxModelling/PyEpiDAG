@@ -71,7 +71,7 @@ class FrozenSingleActor(SimulationActor):
         self.Dist = self.Loci.get_distribution(pas)
 
     def __repr__(self):
-        return '{} ({})'.format(self.Field, self.Dist.Name)
+        return '{} ({})'.format(self.Field, repr(self.Dist))
 
     def __str__(self):
         return self.Dist.Name
