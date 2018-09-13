@@ -3,8 +3,10 @@ from epidag.bayesnet.loci import ValueLoci, ExoValueLoci
 import numpy as np
 
 __author__ = 'TimeWz667'
-__all__ = ['get_sufficient_nodes', 'get_minimal_nodes',
-           'form_hierarchy', 'formulate_blueprint', 'analyse_node_type', 'evaluate_nodes']
+__all__ = ['NodeGroup',
+           'get_sufficient_nodes', 'get_minimal_nodes',
+           'form_hierarchy', 'formulate_blueprint',
+           'analyse_node_type', 'evaluate_nodes']
 
 
 def get_sufficient_nodes(g, included, given=None):

@@ -45,7 +45,7 @@ def sample_minimally(bn, included, cond=None, sources=True):
 
     for nod in suf_exo:
         if nod not in cond:
-            raise ValueError('Exogenous node {} does not found'.format(nod))
+            raise ValueError('Exogenous node {} needed'.format(nod))
 
     res = dict(cond)
 

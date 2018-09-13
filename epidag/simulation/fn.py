@@ -22,6 +22,6 @@ def as_simulation_core(bn, hie=None, root=None, random=None, out=None):
 
 
 def quick_build_parameter_core(script):
-    bn = dag.bn_from_script(script)
+    bn = dag.bayes_net_from_script(script)
     sm = as_simulation_core(bn)
     return sm.generate('')

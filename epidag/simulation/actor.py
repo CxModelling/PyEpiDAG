@@ -17,21 +17,41 @@ class CompoundActor(SimulationActor):
         SimulationActor.__init__(self, field)
         self.Flow = list(flow)
         self.Loci = loci
+        self.Parents = set.union(*[flo.Parents for flo in self.Flow])
+        self.Parents = self.Parents.union(self.Loci.Parents)
 
     def sample(self, pas=None, **kwargs):
-        pas = dict(pas) if pas else dict()
-        pas.update(kwargs)
+        parents = dict()
+        for p in self.Parents:
+            try:
+                parents[p] = pas[p]
+            except KeyError:
+                pass
+            try:
+                parents[p] = kwargs[p]
+            except KeyError:
+                pass
+
         for loc in self.Flow:
-            pas[loc.Name] = loc.sample(pas)
-        return self.Loci.sample(pas)
+            parents[loc.Name] = loc.sample(parents)
+        return self.Loci.sample(parents)
 
     def sample_with_mediators(self, pas=None, **kwargs):
-        pas = dict(pas) if pas else dict()
-        pas.update(kwargs)
+        parents = dict()
+        for p in self.Parents:
+            try:
+                parents[p] = pas[p]
+            except KeyError:
+                pass
+            try:
+                parents[p] = kwargs[p]
+            except KeyError:
+                pass
+
         res = dict()
         for loc in self.Flow:
-            res[loc.Name] = loc.sample(pas)
-        res[self.Field] = self.Loci.sample(pas)
+            res[loc.Name] = parents[loc.Name] = loc.sample(parents)
+        res[self.Field] = self.Loci.sample(parents)
         return res
 
     def __repr__(self):
@@ -45,11 +65,20 @@ class SingleActor(SimulationActor):
     def __init__(self, field, di):
         SimulationActor.__init__(self, field)
         self.Loci = di
+        self.Parents = set(self.Loci.Parents)
 
     def sample(self, pas=None, **kwargs):
-        pas = dict(pas) if pas else dict()
-        pas.update(kwargs)
-        return self.Loci.sample(pas)
+        parents = dict()
+        for p in self.Parents:
+            try:
+                parents[p] = pas[p]
+            except KeyError:
+                pass
+            try:
+                parents[p] = kwargs[p]
+            except KeyError as e:
+                raise e
+        return self.Loci.sample(parents)
 
     def __repr__(self):
         return '{} ({})'.format(self.Field, self.Loci.Func)
