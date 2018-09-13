@@ -101,7 +101,8 @@ class SimulationGroup:
         prior = 0
         for loci in self.FixedChain:
             if not isinstance(loci, ExoValueLoci):
-                loci.fill(pc)
+                if loci.Name not in pc.Locus:
+                    loci.fill(pc)
                 prior += loci.evaluate(pc)
         pc.LogPrior = prior
         if actors:

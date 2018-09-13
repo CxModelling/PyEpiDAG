@@ -19,6 +19,10 @@ class ParameterCore(Gene):
     def Group(self):
         return self.SG.Name
 
+    @property
+    def Waiting(self):
+        return self.SG.Waiting
+
     def breed(self, nickname, group, exo=None):
         """
         Generate an offspring node
@@ -263,5 +267,14 @@ class ParameterCore(Gene):
             sg = self.SG
         pc_new = sg.generate(self.Nickname, dict(self))
         pc_new.LogPrior = self.LogPrior
-        # todo children copy
+
+        self.__children_copy(pc_new)
+
         return pc_new
+
+    def __children_copy(self, pc_new):
+        for k, chd in self.Children.items():
+            gp = chd.Group
+            chd_new = pc_new.breed(k, gp, exo=chd.Locus)
+            chd_new.LogPrior = chd.LogPrior
+            chd.__children_copy(chd_new)
