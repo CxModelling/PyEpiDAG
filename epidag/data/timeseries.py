@@ -4,7 +4,7 @@ from .frame import AbsDataSet
 from epidag.bayesnet.distribution import CategoricalRV
 
 __author__ = 'TimeWz667'
-__all__ = ['TimeSeries', 'TimeSeriesVector', 'TimeSeriesProbabilityTable']
+__all__ = ['TimeSeries', 'TimeSeriesVector', 'TimeSeriesProbabilityTable', 'LeeCarter']
 
 
 class TimeSeries(AbsDataSet):
@@ -62,3 +62,27 @@ class TimeSeriesProbabilityTable(AbsDataSet):
 
     def __repr__(self):
         return 'TimeSeriesProbabilityTable: {} ~ {}'.format(', '.join(self.IndexXs), self.IndexTime)
+
+
+class LeeCarter(AbsDataSet):
+    def __init__(self, mat_t, mat_a, i_time='Time',
+                 i_age='Age', i_al='Alpha', i_be='Beta', i_ka='Kappa', kind='nearest'):
+        AbsDataSet.__init__(self, mat_t)
+
+        self.Times = np.array(mat_t[i_time])
+        self.Kappa = np.array(mat_t[i_ka])
+        self.Ages = list(mat_a[i_age])
+        self.Alpha = {ent[i_age]: ent[i_al] for _, ent in mat_a.iterrows()}
+        self.Beta = {ent[i_age]: ent[i_be] for _, ent in mat_a.iterrows()}
+        self.KappaFn = interp1d(x=self.Times, y=self.Kappa, kind=kind,
+                                bounds_error=False, fill_value=(self.Kappa[0], self.Kappa[-1]))
+
+    def __call__(self, t):
+        return {a: self.get_rate(t, a) for a in self.Ages}
+
+    def get_rate(self, t, a):
+        mu = self.Alpha[a] + self.KappaFn(t) * self.Beta[a]
+        return np.exp(mu)
+
+    def __repr__(self):
+        return 'Lee Carter'

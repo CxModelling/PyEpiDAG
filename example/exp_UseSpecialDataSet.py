@@ -59,3 +59,17 @@ tspt = TimeSeriesProbabilityTable(mat, 'Time', ['X', 'Y', 'Z'])
 
 print(tspt)
 print('\nSampling\n', tspt.sample(n=10, t=5))
+
+
+print('\nLee Carter')
+mat_a = pd.read_csv('../data/lca.csv')
+mat_t = pd.read_csv('../data/lct.csv')
+
+
+lc = LeeCarter(mat_t=mat_t, mat_a=mat_a, i_time='Time', i_age='Age',
+               i_al='Alpha', i_be='Beta', i_ka='Kappa')
+
+
+print('\nGet single rate\n', lc.get_rate(5, 'M'))
+
+print('\nGet Rate Table\n', lc(5))

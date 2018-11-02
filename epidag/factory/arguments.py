@@ -236,7 +236,7 @@ class List(Argument):
         self.Size = size
 
     def check(self, value, resource=None):
-        try:
+        try:  # todo list input
             value = eval(value, resource)
         except NameError:
             raise ValidationError('Invalidated value')
