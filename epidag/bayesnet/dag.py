@@ -161,7 +161,7 @@ if __name__ == '__main__':
     js = bn_script_to_json(scr)
     print(js)
 
-    dag1 = BayesianNetwork(js)
+    ex = BayesianNetwork(js)
 
     print('\nTo JSON, From JSON')
-    print(dag1)
+    print(ex)

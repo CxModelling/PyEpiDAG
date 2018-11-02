@@ -5,7 +5,6 @@ import numpy.random as rd
 from abc import ABCMeta, abstractmethod
 from epidag.factory import get_workshop
 import epidag.factory.arguments as vld
-from epidag.util import parse_function, evaluate_function
 
 __author__ = 'TimeWz667'
 __all__ = ['AbsDistribution', 'SpDouble', 'SpInteger', 'DistributionCentre',
