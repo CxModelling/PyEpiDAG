@@ -1,14 +1,12 @@
 import epidag as dag
 from epidag.simulation.fn import *
-from epidag.causality.fn import *
-from epidag.fitting.fn import *
 
 __author__ = 'TimeWz667'
 
 
 def sample(bn, cond=None):
     """
-    sample every variables of a Bayesian Network
+    Sample every variables of a Bayesian Network
     :param bn: a Bayesian Network
     :param cond: dict, given variables
     :return:
@@ -28,7 +26,7 @@ def sample(bn, cond=None):
 
 def sample_minimally(bn, included, cond=None, sources=True):
     """
-    sample variables which are minimal requirements of having included
+    Sample variables which are minimal requirements of having included
     :param bn: a Bayesian Network
     :param included: iterable, targeted output variables
     :param cond: dict, given variables
@@ -58,6 +56,7 @@ def sample_minimally(bn, included, cond=None, sources=True):
         return sinks, med
     else:
         return sinks
+
 
 def as_causal_diagram(bn):
     return

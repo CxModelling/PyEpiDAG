@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 __author__ = 'TimeWz667'
-__all__ = ['CompoundActor', 'SingleActor', 'FrozenSingleActor', 'Sampler']
+__all__ = ['CompoundActor', 'SingleActor', 'FrozenSingleActor', 'FrozenSingleFunctionActor', 'Sampler']
 
 
 class SimulationActor(metaclass=ABCMeta):
@@ -26,11 +26,7 @@ class CompoundActor(SimulationActor):
             try:
                 parents[p] = pas[p]
             except KeyError:
-                pass
-            try:
                 parents[p] = kwargs[p]
-            except KeyError:
-                pass
 
         for loc in self.Flow:
             parents[loc.Name] = loc.sample(parents)
@@ -77,6 +73,25 @@ class SingleActor(SimulationActor):
                 except KeyError as e:
                     raise e
         return self.Loci.sample(parents)
+
+    def __repr__(self):
+        return '{} ({})'.format(self.Field, self.Loci.Func)
+
+    def __str__(self):
+        return str(self.Loci.Func)
+
+
+class FrozenSingleFunctionActor(SimulationActor):
+    def __init__(self, field, di, pas):
+        SimulationActor.__init__(self, field)
+        self.Loci = di
+        self.Pars = pas
+
+    def sample(self, pas=None, **kwargs):
+        return self.Loci.sample(self.Pars)
+
+    def update(self, pas):
+        self.Pars = pas
 
     def __repr__(self):
         return '{} ({})'.format(self.Field, self.Loci.Func)

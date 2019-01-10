@@ -1,4 +1,4 @@
-from epidag.simulation.actor import CompoundActor, FrozenSingleActor, SingleActor
+from epidag.simulation.actor import CompoundActor, FrozenSingleActor, FrozenSingleFunctionActor, SingleActor
 from epidag.simulation.parcore import ParameterCore
 from epidag.bayesnet.loci import ExoValueLoci
 import networkx as nx
@@ -63,7 +63,11 @@ class SimulationGroup:
                 if act.TypeH == 'c':
                     actor = CompoundActor(name, act.Flow, bn[name])
                 elif act.TypeH == 'f':
-                    actor = FrozenSingleActor(name, bn[name], pas)
+                    loc = bn[name]
+                    try:
+                        actor = FrozenSingleActor(name, loc, pas)
+                    except AttributeError:
+                        actor = FrozenSingleFunctionActor(name, loc, pas)
                 else:
                     actor = SingleActor(name, bn[name])
 

@@ -128,6 +128,9 @@ class BayesianNetwork:
     def Exo(self):
         return self.__exo if self.is_frozen() else find_exo(self)
 
+    def needs_calculation(self, node):
+        return isinstance(self[node], DistributionLoci) or isinstance(self[node], FunctionLoci)
+
     def is_rv(self, node):
         return isinstance(self[node], DistributionLoci)
 

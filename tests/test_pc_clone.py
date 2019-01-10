@@ -20,7 +20,7 @@ class ParameterCoreCloneTest(unittest.TestCase):
             'c': ['z']
         }
 
-        sc = dag.as_simulation_core(bn, hei)
+        sc = dag.as_simulation_core(bn, hei, out=[])
 
         pc_a = sc.generate('A')
         pc_b = pc_a.breed('B', 'b')
@@ -28,6 +28,7 @@ class ParameterCoreCloneTest(unittest.TestCase):
 
         pc_aa = pc_a.clone(copy_sc=True)
         pc_cc = pc_aa.find_descendant('A@B@C')
+
         self.assertEqual(pc_c['z'], 3)
         self.assertEqual(pc_cc['z'], 3)
 

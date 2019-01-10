@@ -108,6 +108,28 @@ class NodeGroup:
                 self.catch(nod)
                 return
 
+    def deep_remove(self, k):
+        try:
+            self.Nodes.remove(k)
+        except ValueError:
+            pass
+        for chd in self.Children:
+            chd.deep_remove(k)
+
+    def check_conflict(self, g):
+        for chd in self.Children:
+            chd.check_conflict(g)
+
+        for c1 in self.Children:
+            nodes = c1.get_all()
+            for c2 in self.Children:
+                if c1 is c2:
+                    continue
+                for node in nodes:
+                    if c2.needs(node, g):
+                        c1.deep_remove(node)
+                        self.Nodes.add(node)
+
     def get_all(self):
         return set.union(self.Nodes, *[chd.get_all() for chd in self.Children])
 
@@ -175,7 +197,7 @@ def form_hierarchy(bn, hie=None, root=None):
         root = NodeGroup(root, bn.Order)
 
     # root.print()
-
+    root.check_conflict(g)
     all_fixed = root.get_all()
     all_floated = [nod for nod in bn.Order if nod not in all_fixed]
 
@@ -272,7 +294,7 @@ def formulate_blueprint(bn, root=None, random=None, out=None):
     random = random if random else list()
     if out is None:
         out = set.union(*[set(fra + ra) for (_, _, _, fra, ra, _) in suggest.values()])
-        out = set([o for o in out if bn.is_rv(o)])
+        out = set([o for o in out if bn.needs_calculation(o)])
     elif len(out) is 0:
         out = []
 
@@ -320,4 +342,3 @@ def evaluate_nodes(bn, pars):
     nodes = bn.DAG.nodes
     lps = np.sum([nodes[k]['loci'].evaluate(pars) for k in pars.keys()])
     return lps
-

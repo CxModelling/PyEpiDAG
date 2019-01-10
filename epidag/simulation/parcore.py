@@ -208,14 +208,6 @@ class ParameterCore(Gene):
         for v in self.Children.values():
             v.__set_response(imp, shocked)
 
-    def freeze(self, exo=None):
-        exo = exo if exo else dict()
-        for k, s in self.get_samplers().items():
-            if isinstance(s, CompoundActor):
-                self.Locus.update(s.sample_with_mediators(self.Locus, **exo))
-            else:
-                self.Locus[k] = s.sample(self.Locus, **exo)
-
     def __dict__(self):
         return dict(self.Locus)
 

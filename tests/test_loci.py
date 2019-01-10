@@ -2,6 +2,7 @@ import unittest
 import epidag as dag
 import epidag.bayesnet.loci as lc
 
+
 class LociTest(unittest.TestCase):
     def test_single_value(self):
         loci = lc.ValueLoci('v1', '0.5')
