@@ -1,7 +1,6 @@
 from abc import ABCMeta, abstractmethod
-from .fitter import Fitter
+from .fitter import BayesianFitter
 import numpy as np
-import logging
 
 __author__ = 'TimeWz667'
 __all__ = ['MCMC']
@@ -11,9 +10,6 @@ Adopted from
     Roberts, Gareth O., and Jeffrey S. Rosenthal. 
     "General state space Markov chains and MCMC algorithms." Probability Surveys 1 (2004): 20-71.
 """
-
-
-logger = logging.getLogger(__name__)
 
 
 class AbsStepper(metaclass=ABCMeta):
@@ -93,14 +89,14 @@ class IntegerStepper(AbsStepper):
         return np.round(np.random.normal(v, scale))
 
 
-class MCMC(Fitter):
+class MCMC(BayesianFitter):
     DefaultParameters = {
         'burn': 1000,
         'thin': 2
     }
 
     def __init__(self, bm):
-        Fitter.__init__(self, bm)
+        BayesianFitter.__init__(self, bm)
         self.Steppers = list()
         self.Last = None
         self.BurnIn = MCMC.DefaultParameters['burn']
@@ -125,16 +121,16 @@ class MCMC(Fitter):
         if 'thin' in kwargs:
             self.Thin = kwargs['thin']
 
-        logger.info('Initialising')
+        self.info('Initialising')
         self.initialise()
         ns = 0
-        logger.info('Burning in')
+        self.info('Burning in')
         while ns < self.BurnIn:
             for stp in self.Steppers:
                 ns += 1
                 self.Last = stp.step(self.Model, self.Last)
 
-        logger.info('Gathering posteriori')
+        self.info('Gathering posteriori')
         while True:
             for stp in self.Steppers:
                 ns += 1
@@ -142,14 +138,14 @@ class MCMC(Fitter):
                 if ns % self.Thin is 0:
                     self.Posterior.append(self.Last)
                 if len(self.Posterior) >= niter:
-                    logger.info('Completed')
+                    self.info('Completed')
                     return
 
     def update(self, n, **kwargs):
         if 'thin' in kwargs:
             self.Thin = kwargs['thin']
 
-        logger.info('Updating')
+        self.info('Updating')
         ns = 0
         while True:
             for stp in self.Steppers:
@@ -158,5 +154,5 @@ class MCMC(Fitter):
                 if ns % self.Thin is 0:
                     self.Posterior.append(self.Last)
                 if ns >= n:
-                    logger.info('Completed')
+                    self.info('Finished')
                     return
