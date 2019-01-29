@@ -102,13 +102,14 @@ class MCMC(BayesianFitter):
         self.BurnIn = MCMC.DefaultParameters['burn']
         self.Thin = MCMC.DefaultParameters['thin']
 
-        for loci, dist in self.Model.get_prior_distributions().items():
-            if dist.Type is 'Double':
-                self.Steppers.append(DoubleStepper(loci, dist.Lower, dist.Upper))
-            elif dist.Type is 'Integer':
-                self.Steppers.append(IntegerStepper(loci, dist.Lower, dist.Upper))
-            elif dist.Type is 'Binary':
-                self.Steppers.append(BinaryStepper(loci, dist.Lower, dist.Upper))
+        for d in self.Model.get_movable_nodes():
+            loci, lo, up = d['Name'], d['Lower'], d['Upper']
+            if d['Type'] is 'Double':
+                self.Steppers.append(DoubleStepper(loci, lo, up))
+            elif d['Type'] is 'Integer':
+                self.Steppers.append(IntegerStepper(loci, lo, up))
+            elif d['Type'] is 'Binary':
+                self.Steppers.append(BinaryStepper(loci, lo, up))
 
     def initialise(self):
         self.Posterior.clear()

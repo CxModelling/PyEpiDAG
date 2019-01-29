@@ -16,6 +16,19 @@ def find_roots(bn):
     return [k for k, v in bn.DAG.pred.items() if len(v) is 0]
 
 
+def find_rv_roots(bn):
+    rr = list()
+
+    for k in bn.Order:
+        if bn.is_rv(k):
+            for a in nx.ancestors(bn.DAG, k):
+                if bn.is_rv(a):
+                    break
+            else:
+                rr.append(k)
+    return rr
+
+
 def find_leaves(bn):
     return [k for k, v in bn.DAG.succ.items() if len(v) is 0]
 
@@ -55,6 +68,7 @@ class BayesianNetwork:
         self.script = None
         self.__order = None
         self.__roots = None
+        self.__rv_roots = None
         self.__leaves = None
         self.__exo = None
 
@@ -104,6 +118,7 @@ class BayesianNetwork:
         nx.freeze(self.DAG)
         self.__order = find_order(self)
         self.__roots = find_roots(self)
+        self.__rv_roots = find_rv_roots(self)
         self.__leaves = find_leaves(self)
         self.__exo = find_exo(self)
         self.json = form_js(self)
@@ -119,6 +134,10 @@ class BayesianNetwork:
     @property
     def Roots(self):
         return self.__roots if self.is_frozen() else find_roots(self)
+
+    @property
+    def RVRoots(self):
+        return self.__rv_roots if self.is_frozen() else find_rv_roots(self)
 
     @property
     def Leaves(self):
@@ -199,6 +218,7 @@ def bayes_net_from_json(js):
     bn.json = js
     bn.__order = js['Order']
     bn.__roots = js['Roots']
+    bn.__rv_roots = js['RVRoots']
     bn.__leaves = js['Leaves']
     bn.__exo = js['Exo']
     return bn

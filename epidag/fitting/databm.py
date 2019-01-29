@@ -63,13 +63,6 @@ class PriorNodeSet:
         vs = {k: v for k, v in gene if k in self.Nodes}
         return dag.evaluate_nodes(bn, vs)
 
-    def get_prior_distributions(self, bn, gene):
-        dis = dict()
-        for k, _ in gene:
-            if k in self.Nodes and bn.is_rv(k):
-                dis[k] = bn[k].get_distribution(gene)
-        return dis
-
     def __str__(self):
         return "Prior nodes: {}".format(self.Nodes)
 
@@ -121,16 +114,17 @@ class DataBayesianModel(BayesianModel):
         self.Root = PriorNodeSet(root_nodes)
         self.DataEntries = entries
 
+    def get_movable_nodes(self):
+        mn = BayesianModel.get_movable_nodes(self)
+        mn = [n for n in mn if n['Name'] in self.Root.Nodes]
+        return mn
+
     def sample_prior(self):
         return self.Root.sample_prior(self.BN)
 
     def evaluate_prior(self, prior):
         prior.LogPrior = self.Root.evaluate_prior(self.BN, prior)
         return prior.LogPrior
-
-    def get_prior_distributions(self, prior=None):
-        prior = prior if prior else self.sample_prior()
-        return self.Root.get_prior_distributions(self.BN, prior)
 
     @property
     def has_exact_likelihood(self):

@@ -24,15 +24,6 @@ class SimulationBayesianModel(BayesianModel):
         prior.LogPrior = dag.evaluate_nodes(self.SimCore.BN, prior)
         return prior.LogPrior
 
-    def get_prior_distributions(self, prior=None):
-        prior = prior if prior else self.sample_prior()
-        dis = dict()
-        bn = self.SimCore.BN
-        for k, _ in prior:
-            if bn.is_rv(k):
-                dis[k] = bn[k].get_distribution(prior)
-        return dis
-
     def evaluate_likelihood(self, prior):
         sim = self.SimFn(prior, self.Data)
         return self.MeasureFn(sim, self.Data)

@@ -11,13 +11,23 @@ class BayesianModel(metaclass=ABCMeta):
     def sample_prior(self):
         pass
 
-    @abstractmethod
     def evaluate_prior(self, prior):
         pass
 
-    @abstractmethod
+    def get_movable_nodes(self):
+        p = self.sample_prior()
+        res = []
+        for root in self.BN.RVRoots:
+            if root in p:
+                d = self.BN[root].get_distribution(p)
+                res.append({'Name': root, 'Type': d.Type, 'Upper': d.Upper, 'Lower': d.Lower})
+        return res
+
     def get_prior_distributions(self, prior=None):
-        pass
+        dis = dict()
+        for root in self.BN.RVRoots:
+            dis[root] = self.BN[root].get_distribution(prior)
+        return dis
 
     @property
     @abstractmethod
