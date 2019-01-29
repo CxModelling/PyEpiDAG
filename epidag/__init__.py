@@ -4,4 +4,8 @@ from epidag.bayesnet import *
 import epidag.data
 import epidag.causality
 import epidag.fitting
-from epidag.fn import *
+from .fn import *
+from .simulation.fn import *
+from .bayesnet.fn import *
+from .fitting import as_data_model
+from .fitting import as_simulation_data_model

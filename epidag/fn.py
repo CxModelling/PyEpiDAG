@@ -1,6 +1,4 @@
 import epidag as dag
-from epidag.fitting import as_data_model
-from epidag.fitting import as_simulation_data_model
 
 __author__ = 'TimeWz667'
 

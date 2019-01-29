@@ -8,15 +8,16 @@ __all__ = ['ABC']
 class ABC(BayesianFitter):
     DefaultParameters = {
         'test_n': 100,
-        'test_p': 0.15
+        'test_p': 0.15,
+        'max_drop': 1000
     }
 
     def __init__(self, bm):
         BayesianFitter.__init__(self, bm)
         self.TestN = ABC.DefaultParameters['test_n']
         self.TestP = ABC.DefaultParameters['test_p']
+        self.MaxDrop = ABC.DefaultParameters['max_drop']
         self.Eps = None
-        self.Prior = list()
 
     def initialise(self):
         self.Posterior.clear()
@@ -33,13 +34,28 @@ class ABC(BayesianFitter):
 
         self.info('Testing threshold')
 
-        tests = list()
-        for _ in range(self.TestN):
-            p = self.Model.sample_prior()
-            li = self.Model.evaluate_likelihood(p)
-            tests.append(li)
+        if 'eps' in kwargs:
+            self.Eps = kwargs['eps']
+        else:
+            drop = 0
+            tests = list()
+            for _ in range(self.TestN):
+                p = self.Model.sample_prior()
 
-        self.Eps = np.percentile(tests, (1-self.TestP)*100)
+                li = self.Model.evaluate_likelihood(p)
+                if np.isfinite(li):
+                    tests.append(li)
+                else:
+                    drop += 1
+                    if drop > self.MaxDrop:
+                        self.error('Too many infinite likelihood')
+                        return
+
+            self.Eps = np.percentile(tests, (1-self.TestP)*100)
+
+        if not np.isfinite(self.Eps):
+            self.error('Non-reasonable eps')
+            return
 
         self.info('Fitting')
         while len(self.Posterior) < niter:
@@ -47,6 +63,7 @@ class ABC(BayesianFitter):
             li = self.Model.evaluate_likelihood(p)
             if li < self.Eps:
                 continue
+
             p.LogLikelihood = li
             self.Posterior.append(p)
         self.info('Gathering posteriori')
@@ -63,4 +80,3 @@ class ABC(BayesianFitter):
                 continue
             p.LogLikelihood = li
             self.Posterior.append(p)
-
