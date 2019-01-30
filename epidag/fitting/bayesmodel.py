@@ -8,9 +8,8 @@ class BayesianModel(metaclass=ABCMeta):
     def __init__(self, bn):
         self.BN = bn
 
-    @abstractmethod
     def sample_prior(self):
-        pass
+        return dag.Gene(dag.sample(self.BN))
 
     def evaluate_prior(self, prior):
         prior.LogPrior = dag.evaluate_nodes(self.BN, prior)
@@ -24,12 +23,6 @@ class BayesianModel(metaclass=ABCMeta):
                 d = self.BN[root].get_distribution(p)
                 res.append({'Name': root, 'Type': d.Type, 'Upper': d.Upper, 'Lower': d.Lower})
         return res
-
-    def get_prior_distributions(self, prior=None):
-        dis = dict()
-        for root in self.BN.RVRoots:
-            dis[root] = self.BN[root].get_distribution(prior)
-        return dis
 
     @property
     @abstractmethod
