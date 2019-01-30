@@ -175,12 +175,16 @@ class ParameterCore(Gene):
             sel = sel.get_child(name)
         return sel
 
-    def impulse(self, imp):
+    def impulse(self, imp, bn=None):
         """
         Do interventions
         :param imp: dict(node: value) or list(node), intervention
+        :param bn: the original bayesian network
         """
-        g = self.SG.SC.BN.DAG
+        try:
+            g = self.SG.SC.BN.DAG
+        except AttributeError:
+            g = bn.DAG
         if isinstance(imp, dict):
             shocked = set.union(*[set(nx.descendants(g, k)) for k in imp.keys()])
             non_imp = [k for k, v in imp.items() if v is None]
