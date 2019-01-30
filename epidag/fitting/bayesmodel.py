@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+import epidag as dag
 __author__ = 'TimeWz667'
 __all__ = ['BayesianModel']
 
@@ -12,7 +13,8 @@ class BayesianModel(metaclass=ABCMeta):
         pass
 
     def evaluate_prior(self, prior):
-        pass
+        prior.LogPrior = dag.evaluate_nodes(self.BN, prior)
+        return prior.LogPrior
 
     def get_movable_nodes(self):
         p = self.sample_prior()

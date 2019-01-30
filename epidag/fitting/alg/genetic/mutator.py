@@ -45,19 +45,20 @@ class BinaryMutator(AbsMutator):
 class DoubleMutator(AbsMutator):
     def __init__(self, name, lo, up):
         AbsMutator.__init__(self, name, lo, up)
+        self.Eps = np.finfo(float).eps
 
     def set_scale(self, vs):
         x = np.array(vs)
         hi = x.std()
         lo = min(sts.iqr(x), sts.iqr(x) / 1.34)
         if not lo:
-            lo = hi if hi else 1
+            lo = hi if hi else .1
 
         self.Scale = 0.9 * lo * np.power(len(x), -0.2)
 
     def proposal(self, v):
         v1 = rd.normal(v, self.Scale)
-        return max(min(v1, 1), 0)
+        return max(min(v1, self.Upper - self.Eps), self.Lower + self.Eps)
 
     def kernel(self, v1, v2):
         return sts.norm.pdf(v1, v2, self.Scale)
@@ -78,7 +79,7 @@ class IntegerMutator(AbsMutator):
 
     def proposal(self, v):
         v1 = round(rd.normal(v, self.Scale))
-        return max(min(v1, 1), 0)
+        return max(min(v1, self.Upper), self.Lower)
 
     def kernel(self, v1, v2):
         return sts.norm.pdf(v1, v2, self.Scale)

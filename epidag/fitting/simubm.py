@@ -20,10 +20,6 @@ class SimulationBayesianModel(BayesianModel):
         self.Index += 1
         return p
 
-    def evaluate_prior(self, prior):
-        prior.LogPrior = dag.evaluate_nodes(self.SimCore.BN, prior)
-        return prior.LogPrior
-
     def evaluate_likelihood(self, prior):
         sim = self.SimFn(prior, self.Data)
         return self.MeasureFn(sim, self.Data)

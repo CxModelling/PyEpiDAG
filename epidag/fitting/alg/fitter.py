@@ -3,6 +3,7 @@ import logging
 from collections import OrderedDict
 import pandas as pd
 from ..misc import dic, ess
+from epidag import Gene
 
 __author__ = 'TimeWz667'
 
@@ -94,6 +95,9 @@ class BayesianFitter(Fitter, metaclass=ABCMeta):
 class FrequentistFitter(Fitter, metaclass=ABCMeta):
     def __init__(self, model):
         Fitter.__init__(self, model)
-        self.BestFit = {}
+        self.BestFit = Gene()
+
+    def summarise_fitness(self):
+        pass
 
 

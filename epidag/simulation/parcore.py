@@ -208,6 +208,9 @@ class ParameterCore(Gene):
         for v in self.Children.values():
             v.__set_response(imp, shocked)
 
+        if imp:
+            self.LogLikelihood = 0
+
     def __dict__(self):
         return dict(self.Locus)
 

@@ -53,9 +53,14 @@ class Gene:
                 if nod in shocked:
                     self[nod] = g.nodes[nod]['loci'].sample(self)
 
+            if imp:
+                self.LogLikelihood = 0
+
         else:
             imp = {k: v for k, v in new_locus.items() if k in self}
             self.Locus.update(imp)
+            if imp:
+                self.LogLikelihood = 0
 
     def clone(self):
         g = Gene(self.Locus, self.LogPrior)

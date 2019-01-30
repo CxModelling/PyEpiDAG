@@ -46,8 +46,13 @@ class FittingTest(unittest.TestCase):
         print()
         fit = dag.fitting.MCMC(self.DM)
         fit.fit(1000)
-        fit.summarise_posterior()
         print(fit.summarise_posterior())
+
+    def test_ga(self):
+        print()
+        fit = dag.fitting.GA(self.DM)
+        fit.fit(500, target='MAP')
+        print(fit.summarise_fitness())
 
 
 if __name__ == '__main__':

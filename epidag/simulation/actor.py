@@ -26,7 +26,10 @@ class CompoundActor(SimulationActor):
             try:
                 parents[p] = pas[p]
             except KeyError:
-                parents[p] = kwargs[p]
+                try:
+                    parents[p] = kwargs[p]
+                except KeyError:
+                    pass
 
         for loc in self.Flow:
             parents[loc.Name] = loc.sample(parents)
