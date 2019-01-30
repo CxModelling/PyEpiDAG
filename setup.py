@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='PyEpiDAG',
-    version='2.5.1',
+    version='2.6',
     packages=find_packages(),
     url='https://github.com/TimeWz667/PyEpiDAG',
     license='MIT',
