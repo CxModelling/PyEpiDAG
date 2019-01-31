@@ -126,6 +126,10 @@ class GA(FrequentistFitter):
                 p.LogLikelihood = self.Model.evaluate_likelihood(p)
 
     def __selection(self):
+        for p in self.Population:
+            if p.LogLikelihood is 0:
+                p.LogLikelihood = self.Model.evaluate_likelihood(p)
+
         if self.Target == 'MAP':
             wts = [p.LogPosterior for p in self.Population]
         else:
@@ -151,7 +155,7 @@ class GA(FrequentistFitter):
             'Max fitness': self.MaxFitness,
             'Mean fitness': self.MeanFitness
         })
-        self.info('Generation: {}, Mean fitness: {:g}, Max fitness: {:g}'.format(
+        self.info('Generation: {}, Mean fitness: {:.2E}, Max fitness: {:.2E}'.format(
             self.Generation, self.MeanFitness, self.MaxFitness))
 
     def __termination(self):

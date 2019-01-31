@@ -265,6 +265,7 @@ class ParameterCore(Gene):
         else:
             sg = self.SG
         pc_new = sg.generate(self.Nickname, dict(self))
+        pc_new.LogLikelihood = self.LogLikelihood
         pc_new.LogPrior = self.LogPrior
 
         self.__children_copy(pc_new)
@@ -276,6 +277,7 @@ class ParameterCore(Gene):
             gp = chd.Group
             chd_new = pc_new.breed(k, gp, exo=chd.Locus)
             chd_new.LogPrior = chd.LogPrior
+            chd_new.LogLikelihood = chd.LogLikelihood
             chd.__children_copy(chd_new)
 
 

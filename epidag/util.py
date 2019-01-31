@@ -48,6 +48,20 @@ def resample(wts, hs, pars=None, log=True, new_size=None):
     size = len(wts)
     new_size = max(new_size, 1) if new_size else size
 
+    fin = [np.isfinite(wt) for wt in wts]
+    wts = [wt for wt, f in zip(wts, fin) if f]
+    size = len(wts)
+    if size is 0:
+        if pars:
+            return hs, pars, -np.log(size)
+        else:
+            return hs, -np.log(size)
+
+    hs = [h for h, f in zip(hs, fin) if f]
+
+    if pars:
+        pars = [par for par, f in zip(pars, fin) if f]
+
     if log:
         wts = np.array(wts)
         lse = sp.logsumexp(wts)
