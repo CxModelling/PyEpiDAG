@@ -1,9 +1,9 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod, ABC
 import logging
 from collections import OrderedDict
 import pandas as pd
 from ..misc import dic, ess
-from epidag import Gene
+from epidag import Chromosome
 
 __author__ = 'TimeWz667'
 
@@ -95,7 +95,7 @@ class BayesianFitter(Fitter, metaclass=ABCMeta):
 class FrequentistFitter(Fitter, metaclass=ABCMeta):
     def __init__(self, model):
         Fitter.__init__(self, model)
-        self.BestFit = Gene()
+        self.BestFit = Chromosome()
 
     def summarise_fitness(self):
         pass

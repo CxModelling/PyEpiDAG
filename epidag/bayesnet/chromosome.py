@@ -1,14 +1,14 @@
 import pandas as pd
 import networkx as nx
 
-__all__ = ['Gene']
+__all__ = ['Chromosome']
 
 
-class Gene:
-    def __init__(self, vs=None, prior=0):
+class Chromosome:
+    def __init__(self, vs=None, prior=None):
         self.Locus = dict(vs) if vs else dict()
         self.LogPrior = prior
-        self.LogLikelihood = 0
+        self.LogLikelihood = None
 
     def __len__(self):
         return len(self.Locus)
@@ -21,7 +21,7 @@ class Gene:
 
     def __setitem__(self, key, value):
         self.Locus[key] = value
-        self.LogPrior = 0
+        self.reset_probability()
 
     def __contains__(self, item):
         return item in self.Locus
@@ -54,18 +54,31 @@ class Gene:
                     self[nod] = g.nodes[nod]['loci'].sample(self)
 
             if imp:
-                self.LogLikelihood = 0
+                self.reset_probability()
 
         else:
             imp = {k: v for k, v in new_locus.items() if k in self}
             self.Locus.update(imp)
             if imp:
-                self.LogLikelihood = 0
+                self.reset_probability()
 
     def clone(self):
-        g = Gene(self.Locus, self.LogPrior)
+        g = Chromosome(self.Locus, self.LogPrior)
         g.LogLikelihood = self.LogLikelihood
         return g
+
+    def reset_probability(self):
+        self.LogLikelihood = None
+        self.LogPrior = None
+
+    def is_prior_evaluated(self):
+        return self.LogPrior is not None
+
+    def is_likelihood_evaluated(self):
+        return self.LogLikelihood is not None
+
+    def is_evaluated(self):
+        return self.is_prior_evaluated() and self.is_likelihood_evaluated()
 
     def __repr__(self):
         if not self.Locus:
@@ -80,6 +93,17 @@ class Gene:
             'LogLikelihood': self.LogLikelihood
         }
 
+    def to_data(self):
+        vs = dict(self.Locus)
+        if self.is_prior_evaluated():
+            vs['LogPrior'] = self.LogPrior
+        if self.is_likelihood_evaluated():
+            vs['LogLikelihood'] = self.LogLikelihood
+        if self.is_evaluated():
+            vs['LogPosterior'] = self.LogPosterior
+
+        return vs
+
     @property
     def LogPosterior(self):
         return self.LogPrior + self.LogLikelihood
@@ -93,3 +117,7 @@ class Gene:
     def mean(genes):
         df = pd.DataFrame([gene.Locus for gene in genes])
         return dict(df.mean())
+
+    @staticmethod
+    def to_data_frame(genes):
+        return pd.DataFrame([gene.to_data() for gene in genes])

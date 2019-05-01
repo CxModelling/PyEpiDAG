@@ -214,6 +214,9 @@ class Workshop:
     def list(self):
         return list(self.Creators.keys())
 
+    def __contains__(self, item):
+        return item in self.Creators
+
     def __str__(self):
         products = list(self.Creators.keys())
         if products:

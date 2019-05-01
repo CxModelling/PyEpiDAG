@@ -12,15 +12,15 @@ class Loci(metaclass=ABCMeta):
     def __init__(self, name):
         self.Name = name
 
-    def __call__(self, parent=None):
-        return self.sample(parent)
+    def __call__(self, parents=None):
+        return self.sample(parents)
 
     @abstractmethod
-    def sample(self, parent=None):
+    def sample(self, parents=None):
         pass
 
     @abstractmethod
-    def evaluate(self, parent=None):
+    def evaluate(self, parents=None):
         pass
 
     def fill(self, gene):

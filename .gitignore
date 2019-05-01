@@ -18,3 +18,5 @@ epidag/factory/__pycache__/
 epidag/fitting/__pycache__/
 epidag/simulation/__pycache__/
 epidag/fitting/alg/__pycache__/
+
+.ipynb

@@ -1,13 +1,13 @@
-from epidag.bayesnet import Gene
+from epidag.bayesnet import Chromosome
 from epidag.simulation.actor import FrozenSingleActor, Sampler, CompoundActor
 import networkx as nx
 
 __author__ = 'TimeWz667'
 
 
-class ParameterCore(Gene):
+class ParameterCore(Chromosome):
     def __init__(self, nickname, sg, vs, prior):
-        Gene.__init__(self, vs, prior)
+        Chromosome.__init__(self, vs, prior)
         self.Nickname = nickname
         self.SG = sg
         self.Parent = None
@@ -206,7 +206,7 @@ class ParameterCore(Gene):
         shocked_hoist = dict()
         for k, v in self.ChildrenActors.items():
             shocked_hoist[k] = [s for s, t in v.items() if s in shocked and isinstance(t, FrozenSingleActor)]
-        # print(shocked_locus, shocked_actors, shocked_hoist)
+
         self.SG.set_response(imp, shocked_locus, shocked_actors, shocked_hoist, self)
 
         for v in self.Children.values():
@@ -240,7 +240,7 @@ class ParameterCore(Gene):
 
     def __getitem__(self, item):
         try:
-            return Gene.__getitem__(self, item)
+            return Chromosome.__getitem__(self, item)
         except KeyError:
             try:
                 return self.Parent[item]
