@@ -18,7 +18,7 @@ def bn_script_to_json(script):
     pars = [par.split('#')[0] for par in pars if par != '']
 
     try:
-        name = re.match(r'PCore\s*(?P<name>\w+)\s*\{', pars[0], re.IGNORECASE).group('name')
+        name = re.match(r'PCore\s*(?P<name>\w+)\s*{', pars[0], re.IGNORECASE).group('name')
     except AttributeError:
         raise SyntaxError('Name does not identified')
 
@@ -28,7 +28,7 @@ def bn_script_to_json(script):
     all_pa = set()
     for p in pars:
         if p.find('~') >= 0:
-            p = re.match(r'(\w+)\~(\S+\((\S+)\))', p, re.IGNORECASE)
+            p = re.match(r"(\w+)~(\S+\((\S+)\))", p, re.IGNORECASE)
             p_name, p_func = p.group(1), p.group(3)
             pas, fu = dag.parse_parents(p_func)
             all_fu = all_fu.union(fu)
@@ -37,7 +37,7 @@ def bn_script_to_json(script):
                              'Type': 'Distribution',
                              'Def': p.group(2), 'Parents': list(pas)}
         elif p.find('=') >= 0:
-            p = re.match(r'(\w+)\=(\S+)', p, re.IGNORECASE)
+            p = re.match(r'(\w+)=(\S+)', p, re.IGNORECASE)
             p_name, p_func = p.group(1), p.group(2)
             pseudo = p_func.startswith('f(')
             pas, fu = dag.parse_parents(p_func)
@@ -94,6 +94,14 @@ class BayesianNetwork:
         self.RootNodes = [k for k, v in self.DAG.pred.items() if len(v) is 0]
         self.LeafNodes = [k for k, v in self.DAG.succ.items() if len(v) is 0]
         self.OrderedNodes = list(nx.topological_sort(self.DAG))
+
+    def bind_data_functions(self, dfs):
+        for s in self.OrderedNodes:
+            loci = self[s]
+            try:
+                loci.bind_data_functions(dfs)
+            except AttributeError:
+                pass
 
     def is_rv(self, node):
         return isinstance(self[node], DistributionLoci)

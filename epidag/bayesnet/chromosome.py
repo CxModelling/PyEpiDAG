@@ -51,7 +51,7 @@ class Chromosome:
 
             for nod in bn.Order:
                 if nod in shocked:
-                    self[nod] = g.nodes[nod]['loci'].sample(self)
+                    self[nod] = g.nodes[nod]['loci'].render(self)
 
             if imp:
                 self.reset_probability()

@@ -19,7 +19,7 @@ def sample(bn, cond=None):
 
     for nod in bn.Order:
         if nod not in res:
-            res[nod] = g.nodes[nod]['loci'].sample(res)
+            res[nod] = g.nodes[nod]['loci'].render(res)
     return res
 
 
@@ -48,7 +48,7 @@ def sample_minimally(bn, included, cond=None, sources=True):
 
     for nod in bn.Order:
         if nod in suf and nod not in res:
-            res[nod] = g.nodes[nod]['loci'].sample(res)
+            res[nod] = g.nodes[nod]['loci'].render(res)
     sinks = {k: v for k, v in res.items() if k in included}
     if sources:
         med = {k: v for k, v in res.items() if k not in included}

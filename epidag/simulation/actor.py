@@ -32,8 +32,8 @@ class CompoundActor(SimulationActor):
                     pass
 
         for loc in self.Flow:
-            parents[loc.Name] = loc.sample(parents)
-        return self.Loci.sample(parents)
+            parents[loc.Name] = loc.render(parents)
+        return self.Loci.render(parents)
 
     def sample_with_mediators(self, pas=None, **kwargs):
         parents = dict()
@@ -48,8 +48,8 @@ class CompoundActor(SimulationActor):
 
         res = dict()
         for loc in self.Flow:
-            res[loc.Name] = parents[loc.Name] = loc.sample(parents)
-        res[self.Field] = self.Loci.sample(parents)
+            res[loc.Name] = parents[loc.Name] = loc.render(parents)
+        res[self.Field] = self.Loci.render(parents)
         return res
 
     def __repr__(self):
@@ -75,7 +75,7 @@ class SingleActor(SimulationActor):
                     parents[p] = kwargs[p]
                 except KeyError as e:
                     raise e
-        return self.Loci.sample(parents)
+        return self.Loci.render(parents)
 
     def __repr__(self):
         return '{} ({})'.format(self.Field, self.Loci.Func)
@@ -91,7 +91,7 @@ class FrozenSingleFunctionActor(SimulationActor):
         self.Pars = pas
 
     def sample(self, pas=None, **kwargs):
-        return self.Loci.sample(self.Pars)
+        return self.Loci.render(self.Pars)
 
     def update(self, pas):
         self.Pars = pas
@@ -110,7 +110,7 @@ class FrozenSingleActor(SimulationActor):
         self.Dist = di.get_distribution(pas)
 
     def sample(self, pas=None, **kwargs):
-        return self.Dist.sample()
+        return self.Dist.render()
 
     def update(self, pas):
         self.Dist = self.Loci.get_distribution(pas)

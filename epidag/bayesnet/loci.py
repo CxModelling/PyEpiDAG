@@ -13,10 +13,10 @@ class Loci(metaclass=ABCMeta):
         self.Name = name
 
     def __call__(self, parents=None):
-        return self.sample(parents)
+        return self.render(parents)
 
     @abstractmethod
-    def sample(self, parents=None):
+    def render(self, parents=None):
         pass
 
     @abstractmethod
@@ -24,7 +24,7 @@ class Loci(metaclass=ABCMeta):
         pass
 
     def fill(self, gene):
-        gene[self.Name] = self.sample(gene)
+        gene[self.Name] = self.render(gene)
 
     @property
     @abstractmethod
@@ -54,7 +54,7 @@ class ValueLoci(Loci):
     def Definition(self):
         return self.Value
 
-    def sample(self, pas=None):
+    def render(self, pas=None):
         return self.Value
 
     def evaluate(self, pas=None):
@@ -83,7 +83,7 @@ class ExoValueLoci(Loci):
     def Definition(self):
         return ''
 
-    def sample(self, pas=None):
+    def render(self, pas=None):
         try:
             return pas[self.Name]
         except TypeError:
@@ -121,11 +121,11 @@ class DistributionLoci(Loci):
         loc = {pa: pas[pa] for pa in self.Parents}
         return parse_distribution(self.Func, loc=loc)
 
-    def sample(self, pas=None):
-        return self.get_distribution(pas).sample()
+    def render(self, pas=None):
+        return self.get_distribution(pas).render()
 
     def fill(self, gene):
-        gene[self.Name] = self.sample(gene)
+        gene[self.Name] = self.render(gene)
 
     def evaluate(self, pas=None):
         return self.get_distribution(pas).logpdf(pas[self.Name])
@@ -156,7 +156,7 @@ class FunctionLoci(Loci):
     def Definition(self):
         return self.Func.Expression
 
-    def sample(self, pas=None):
+    def render(self, pas=None):
         try:
             loc = {pa: pas[pa] for pa in self.Parents}
             return self.Func.execute(loc)
@@ -193,7 +193,7 @@ class PseudoLoci(Loci):
     def Definition(self):
         return self.Func
 
-    def sample(self, pas=None):
+    def render(self, pas=None):
         raise AttributeError('Pseudo node can not be implemented')
 
     def evaluate(self, pas=None):
@@ -261,13 +261,13 @@ if __name__ == '__main__':
     d1 = '1/0.01 + exp(k) + u'
     d1 = FunctionLoci('s1', d1)
     print(d1.Parents)
-    print(d1.sample({'k': 2, 'u': 5}))
+    print(d1.render({'k': 2, 'u': 5}))
     print(d1.to_json())
 
     d2 = 'gamma(cos(1/0.01), ss)'
     d2 = DistributionLoci('s2', d2)
     print(d2.Parents)
-    print(d2.sample({'ss': 10, 'u': 5}))
+    print(d2.render({'ss': 10, 'u': 5}))
     print(d2.to_json())
 
     d3 = '1/0.01 + exp(k) + u'

@@ -424,7 +424,7 @@ class PseudoParameterCore(ParameterCore):
             if isinstance(s, CompoundActor):
                 self.Locus.update(s.sample_with_mediators(self.Locus, **exo))
             else:
-                self.Locus[k] = s.sample(self.Locus, **exo)
+                self.Locus[k] = s.render(self.Locus, **exo)
 
     def __dict__(self):
         return dict()

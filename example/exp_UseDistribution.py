@@ -29,4 +29,4 @@ print('p(x): \t', di)
 dist_cat = parse_distribution(di)
 
 print('JSON:\t', dist_cat.to_json())
-print('Counts:\t', Counter(dist_cat.sample(10000)))
+print('Counts:\t', Counter(dist_cat.render(10000)))

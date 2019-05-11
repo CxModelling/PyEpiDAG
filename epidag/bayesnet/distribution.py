@@ -359,4 +359,4 @@ if __name__ == '__main__':
     dist_cat = parse_distribution('cat({"M": 411,"O": kk,"Y": 52})', loc={'kk': 3500})
     from collections import Counter
     print(dist_cat.to_json())
-    print(Counter(dist_cat.sample(10000)))
+    print(Counter(dist_cat.render(10000)))
