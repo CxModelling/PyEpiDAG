@@ -72,6 +72,7 @@ class BayesianNetwork:
                 raise KeyError('Duplicated variable name')
 
         self.DAG.add_node(name, loci=loci, **kwargs)
+        self.DAG.remove_in_edges(name)
 
         new_pa = list()
         for pa in loci.Parents:
@@ -81,7 +82,7 @@ class BayesianNetwork:
             self.DAG.add_edge(pa, name)
 
         # Check acyclic or not
-        if not nx.is_directed_acyclic_graph(self.DAG):
+        if not self.DAG.check_acyclic():
             self.DAG.remove_node(name)
             for pa in new_pa:
                 self.DAG.remove_node(pa)
@@ -108,6 +109,24 @@ class BayesianNetwork:
         assert fn_name not in self.UserDefinedFunctions
         self.UserDefinedFunctions[fn_name] = fn
 
+    def __check_edges(self):
+        exo = set()
+        for node in self.DAG.order():
+            loci = self[node]
+            pars = set(loci.Parents)
+            for k in list(self.DAG.parents(node)):
+                if k not in pars:
+                    self.DAG.remove_edge(k, node)
+            pars.difference_update(self.DAG.parents(node))
+            exo.update(pars)
+
+        for node in exo:
+            self.append_loci(ExoValueLoci(node))
+
+        exo = find_exo(self)
+        for node in exo:
+            if not self.DAG.children(node):
+                self.DAG.remove_node(node)
 
     def complete(self):
         nx.freeze(self.DAG)
@@ -165,6 +184,9 @@ class BayesianNetwork:
     def __getitem__(self, item):
         return self.DAG.nodes[item]['loci']
 
+    def __contains__(self, item):
+        return item in self.DAG
+
     def sort(self, nodes):
         return [node for node in self.Order if node in nodes]
 
@@ -186,8 +208,18 @@ class BayesianNetwork:
     def merge(self, name, sub_bn):
         assert  name != self.Name and name != sub_bn.Name
 
-        bn = BayesianNetwork(name)
-        bn.DAG = merge_dag(self.DAG, sub_bn.DAG)
+        bn = self.copy(name)
+        bn.defrost()
+        for node in sub_bn.Order:
+            if sub_bn.is_exogenous(node):
+                continue
+            if node in bn:
+                bn.DAG.remove_node(node)
+            bn.append_from_js(sub_bn[node].to_json())
+
+        bn.__check_edges()
+        bn.UserDefinedFunctions.update(self.UserDefinedFunctions)
+        bn.UserDefinedFunctions.update(sub_bn.UserDefinedFunctions)
         return bn
 
     def copy(self, new_name=None):
@@ -204,6 +236,7 @@ class BayesianNetwork:
         else:
             for node in self.DAG.nodes():
                 bn.append_from_js(self[node].to_json())
+        bn.UserDefinedFunctions.update(self.UserDefinedFunctions)
         return bn
 
     def plot(self):

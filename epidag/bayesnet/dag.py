@@ -8,7 +8,7 @@ __all__ = ['DAG', 'merge_dag', 'minimal_dag', 'minimal_requirements']
 
 class DAG(nx.DiGraph):
     def __init__(self, data=None, **attr):
-        nx.DiGraph.__init__(self, data=data, **attr)
+        nx.DiGraph.__init__(self, incoming_graph_data=data, **attr)
 
     def parents(self, node):
         return set(self.predecessors(node))
