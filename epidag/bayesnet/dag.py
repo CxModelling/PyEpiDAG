@@ -2,13 +2,13 @@ import networkx as nx
 
 
 __author__ = 'TimeWz'
-__all__ = ['DAG']
+__all__ = ['DAG', 'merge_dag', 'minimal_dag', 'minimal_requirements']
 
 
 
 class DAG(nx.DiGraph):
-    def __init__(self):
-        nx.DiGraph.__init__(self)
+    def __init__(self, data=None, **attr):
+        nx.DiGraph.__init__(self, data=data, **attr)
 
     def parents(self, node):
         return set(self.predecessors(node))
@@ -33,6 +33,9 @@ class DAG(nx.DiGraph):
 
     def sort(self, nodes):
         return [node for node in self.order() if node in nodes]
+
+    def check_acyclic(self):
+        return nx.is_directed_acyclic_graph(self)
 
     def remove_out_edges(self, node):
         for chd in self.children(node):
@@ -116,8 +119,6 @@ if __name__ == '__main__':
     c.add_edge('C', 'D')
     print(c.edges)
 
-    print(minimal_dag(c, ['A', 'C']).edges)
+    print(type(minimal_dag(c, ['A', 'C'])))
 
     print(minimal_requirements(c, 'D', ['C']))
-
-

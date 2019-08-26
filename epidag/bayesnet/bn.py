@@ -1,6 +1,6 @@
 import epidag as dag
 from epidag.bayesnet.loci import *
-from epidag.bayesnet.dag import DAG
+from epidag.bayesnet.dag import DAG, merge_dag
 import re
 import networkx as nx
 from networkx.drawing.nx_agraph import graphviz_layout
@@ -53,6 +53,7 @@ class BayesianNetwork:
     def __init__(self, name):
         self.Name = name
         self.DAG = DAG()
+        self.UserDefinedFunctions = dict()
         self.json = None
         self.script = None
         self.__order = None
@@ -103,6 +104,11 @@ class BayesianNetwork:
         else:
             self.append_loci(loci)
 
+    def add_user_defined_func(self, fn_name, fn):
+        assert fn_name not in self.UserDefinedFunctions
+        self.UserDefinedFunctions[fn_name] = fn
+
+
     def complete(self):
         nx.freeze(self.DAG)
         self.__order = self.DAG.order()
@@ -112,6 +118,16 @@ class BayesianNetwork:
         self.__exo = find_exo(self)
         self.json = form_js(self)
         self.script = form_script(self)
+
+    def defrost(self):
+        self.DAG = DAG(self.DAG)
+        self.json = None
+        self.script = None
+        self.__order = None
+        self.__roots = None
+        self.__rv_roots = None
+        self.__leaves = None
+        self.__exo = None
 
     def is_frozen(self):
         return nx.is_frozen(self.DAG)
@@ -139,6 +155,10 @@ class BayesianNetwork:
     def needs_calculation(self, node):
         return isinstance(self[node], DistributionLoci) or isinstance(self[node], FunctionLoci)
 
+    def is_exogenous(self, node):
+        node = self[node]
+        return isinstance(node, PseudoLoci) or isinstance(node, ExoValueLoci)
+
     def is_rv(self, node):
         return isinstance(self[node], DistributionLoci)
 
@@ -162,6 +182,29 @@ class BayesianNetwork:
 
     def __repr__(self):
         return 'BayesNet(Name: {}, Nodes: {})'.format(self.Name, self.Order)
+
+    def merge(self, name, sub_bn):
+        assert  name != self.Name and name != sub_bn.Name
+
+        bn = BayesianNetwork(name)
+        bn.DAG = merge_dag(self.DAG, sub_bn.DAG)
+        return bn
+
+    def copy(self, new_name=None):
+        if not new_name:
+            new_name = self.Name
+        bn = BayesianNetwork(new_name)
+
+        if self.is_frozen():
+            for node in self.json['Nodes']:
+                bn.append_from_js(node)
+
+            bn.complete()
+
+        else:
+            for node in self.DAG.nodes():
+                bn.append_from_js(self[node].to_json())
+        return bn
 
     def plot(self):
         pos = graphviz_layout(self.DAG, prog='dot')
