@@ -1,19 +1,12 @@
 import epidag as dag
 from epidag.bayesnet.loci import *
+from epidag.bayesnet.dag import DAG
 import re
 import networkx as nx
 from networkx.drawing.nx_agraph import graphviz_layout
 
 __author__ = 'TimeWz667'
 __all__ = ['BayesianNetwork', 'bayes_net_from_json', 'bayes_net_from_script']
-
-
-def find_order(bn):
-    return list(nx.topological_sort(bn.DAG))
-
-
-def find_roots(bn):
-    return [k for k, v in bn.DAG.pred.items() if len(v) is 0]
 
 
 def find_rv_roots(bn):
@@ -27,10 +20,6 @@ def find_rv_roots(bn):
             else:
                 rr.append(k)
     return rr
-
-
-def find_leaves(bn):
-    return [k for k, v in bn.DAG.succ.items() if len(v) is 0]
 
 
 def find_exo(bn):
@@ -63,7 +52,7 @@ def form_script(bn):
 class BayesianNetwork:
     def __init__(self, name):
         self.Name = name
-        self.DAG = nx.DiGraph()
+        self.DAG = DAG()
         self.json = None
         self.script = None
         self.__order = None
@@ -74,7 +63,7 @@ class BayesianNetwork:
 
     def append_loci(self, loci, **kwargs):
         if nx.is_frozen(self.DAG):
-            return  # todo raise AttributeError
+            raise AttributeError('The structure has been fixed')
 
         name = loci.Name
         if name in self.DAG:
@@ -116,10 +105,10 @@ class BayesianNetwork:
 
     def complete(self):
         nx.freeze(self.DAG)
-        self.__order = find_order(self)
-        self.__roots = find_roots(self)
+        self.__order = self.DAG.order()
+        self.__roots = self.DAG.roots()
         self.__rv_roots = find_rv_roots(self)
-        self.__leaves = find_leaves(self)
+        self.__leaves = self.DAG.leaves()
         self.__exo = find_exo(self)
         self.json = form_js(self)
         self.script = form_script(self)
@@ -129,11 +118,11 @@ class BayesianNetwork:
 
     @property
     def Order(self):
-        return self.__order if self.is_frozen() else find_order(self)
+        return self.__order if self.is_frozen() else self.DAG.order()
 
     @property
     def Roots(self):
-        return self.__roots if self.is_frozen() else find_roots(self)
+        return self.__roots if self.is_frozen() else self.DAG.roots()
 
     @property
     def RVRoots(self):
@@ -141,7 +130,7 @@ class BayesianNetwork:
 
     @property
     def Leaves(self):
-        return self.__leaves if self.is_frozen() else find_leaves(self)
+        return self.__leaves if self.is_frozen() else self.DAG.leaves()
 
     @property
     def Exo(self):

@@ -1,175 +1,123 @@
-import epidag as dag
-from epidag.bayesnet.loci import *
-import re
 import networkx as nx
-from networkx.drawing.nx_agraph import graphviz_layout
-
-__author__ = 'TimeWz667'
-__all__ = ['bn_script_to_json', 'bn_from_json', 'bn_from_script', 'BayesianNetwork']
 
 
-def bn_script_to_json(script):
-    # remove space
-    pars = script.replace(' ', '')
-    pars = pars.replace('\t', '')
-
-    # split lines
-    pars = pars.split('\n')
-    pars = [par.split('#')[0] for par in pars if par != '']
-
-    try:
-        name = re.match(r'PCore\s*(?P<name>\w+)\s*{', pars[0], re.IGNORECASE).group('name')
-    except AttributeError:
-        raise SyntaxError('Name does not identified')
-
-    nodes = dict()
-
-    all_fu = set()
-    all_pa = set()
-    for p in pars:
-        if p.find('~') >= 0:
-            p = re.match(r"(\w+)~(\S+\((\S+)\))", p, re.IGNORECASE)
-            p_name, p_func = p.group(1), p.group(3)
-            pas, fu = dag.parse_parents(p_func)
-            all_fu = all_fu.union(fu)
-            all_pa = all_pa.union(pas)
-            nodes[p_name] = {'Name': p_name,
-                             'Type': 'Distribution',
-                             'Def': p.group(2), 'Parents': list(pas)}
-        elif p.find('=') >= 0:
-            p = re.match(r'(\w+)=(\S+)', p, re.IGNORECASE)
-            p_name, p_func = p.group(1), p.group(2)
-            pseudo = p_func.startswith('f(')
-            pas, fu = dag.parse_parents(p_func)
-            if not pseudo:
-                all_fu = all_fu.union(fu)
-            all_pa = all_pa.union(pas)
-            if not pas:
-                node = {'Type': 'Value', 'Def': p_func}
-            elif pseudo:
-                node = {'Type': 'Pseudo', 'Def': p_func, 'Parents': list(pas)}
-            else:
-                node = {'Type': 'Function', 'Def': p_func, 'Parents': list(pas)}
-            node['Name'] = p_name
-            nodes[p_name] = node
-
-    for pa in all_pa:
-        if pa not in nodes:
-            nodes[pa] = {'Type': 'ExoValue'}
-
-    return {'Name': name, 'Nodes': nodes, 'Dependency': list(all_fu)}
+__author__ = 'TimeWz'
+__all__ = ['DAG']
 
 
-class BayesianNetwork:
-    def __init__(self, js):
-        self.Name = js['Name']
-        self.Source = js
-        self.DAG = nx.DiGraph()
 
-        for k, v in js['Nodes'].items():
-            if v['Type'] is 'Value':
-                lo = ValueLoci(k, v['Def'])
-            elif v['Type'] is 'ExoValue':
-                lo = ExoValueLoci(k)
-            elif v['Type'] is 'Distribution':
-                lo = DistributionLoci(k, v['Def'])
-            elif v['Type'] is 'Pseudo':
-                lo = PseudoLoci(k, v['Def'])
-            else:
-                lo = FunctionLoci(k, v['Def'])
+class DAG(nx.DiGraph):
+    def __init__(self):
+        nx.DiGraph.__init__(self)
 
-            self.DAG.add_node(k, loci=lo, **v)
-            if 'Parents' not in v:
-                continue
-            for pa in v['Parents']:
-                self.DAG.add_edge(pa, k)
+    def parents(self, node):
+        return set(self.predecessors(node))
 
-        if not nx.is_directed_acyclic_graph(self.DAG):
-            raise SyntaxError('Cyclic groups found')
-        if set(js['Dependency']) > dag.MATH_FUNC.keys():
-            raise SyntaxError('Unknown functions found')
+    def children(self, node):
+        return set(self.successors(node))
 
-        nx.freeze(self.DAG)
-        self.ExogenousNodes = [k for k, v in self.DAG.nodes.data() if v['Type'] is 'ExoValue']
-        self.RootNodes = [k for k, v in self.DAG.pred.items() if len(v) is 0]
-        self.LeafNodes = [k for k, v in self.DAG.succ.items() if len(v) is 0]
-        self.OrderedNodes = list(nx.topological_sort(self.DAG))
+    def ancestors(self, node):
+        return set(nx.ancestors(self, node))
 
-    def bind_data_functions(self, dfs):
-        for s in self.OrderedNodes:
-            loci = self[s]
-            try:
-                loci.bind_data_functions(dfs)
-            except AttributeError:
-                pass
+    def descendants(self, node):
+        return set(nx.descendants(self, node))
 
-    def is_rv(self, node):
-        return isinstance(self[node], DistributionLoci)
+    def roots(self):
+        return [k for k, v in self.pred.items() if len(v) is 0]
 
-    def __getitem__(self, item):
-        return self.DAG.nodes[item]['loci']
+    def leaves(self):
+        return [k for k, v in self.succ.items() if len(v) is 0]
+
+    def order(self):
+        return list(nx.topological_sort(self))
 
     def sort(self, nodes):
-        return [node for node in self.OrderedNodes if node in nodes]
+        return [node for node in self.order() if node in nodes]
 
-    def copy(self):
-        return BayesianNetwork(self.Source)
+    def remove_out_edges(self, node):
+        for chd in self.children(node):
+            self.remove_edge(node, chd)
 
-    def to_json(self):
-        return self.Source
+    def remove_in_edges(self, node):
+        for par in self.parents(node):
+            self.remove_edge(node, par)
 
-    def __str__(self):
-        ss = ['Name:\t{}'.format(self.Source['Name']), 'Nodes:']
-        for k in self.OrderedNodes:
-            v = self.DAG.nodes[k]
-            ss.append('\t{}'.format(v['loci']))
-        return '\n'.join(ss)
-
-    def plot(self):
-        pos = graphviz_layout(self.DAG, prog='dot')
-        nx.draw(self.DAG, pos, with_labels=True, arrows=True)
-
-    def clone(self):
-        return BayesianNetwork(self.to_json())
-
-    __repr__ = __str__
+    def remove_upstream(self, nodes):
+        if not isinstance(nodes, list):
+            nodes = [nodes]
+        nodes = set(nodes)
+        ord = self.order()
+        for s in ord:
+            if s in nodes:
+                continue
+            if nodes.intersection(self.ancestors(s)):
+                self.remove_node(s)
 
 
-def bn_from_script(script):
-    """
-    Build a Bayesian network from script input
-    :param script: multi-line string, script of a Bayesian network
-    :return: BayesianNetwork
-    """
-    js_bn = bn_script_to_json(script)
-    return BayesianNetwork(js_bn)
+    def remove_downstream(self, nodes):
+        if not isinstance(nodes, list):
+            nodes = [nodes]
+        nodes = set(nodes)
+        ord = self.order()
+        ord.reverse()
+        for s in ord:
+            if s in nodes:
+                continue
+            if nodes.intersection(self.descendants(s)):
+                self.remove_node(s)
 
 
-def bn_from_json(js_bn):
-    """
-    Build a Bayesian network from json input
-    :param js_bn: json, json formatted Bayesian network
-    :return: BayesianNetwork
-    """
-    return BayesianNetwork(js_bn)
+def merge_dag(dag1, dag2):
+    return nx.compose(dag1, dag2)
+
+
+def minimal_dag(dag, nodes):
+    nodes = dag.sort(nodes)
+    to_collect = set()
+    for i in range(len(nodes)):
+        for j in range(i, len(nodes)):
+            for pth in nx.all_simple_paths(dag, nodes[i], nodes[j]):
+                to_collect.update(pth)
+
+    return dag.subgraph(to_collect)
+
+
+def minimal_requirements(dag, target, cond):
+    anc = set(dag.ancestors(target))
+
+    for s in cond:
+        if s in anc:
+            anc.difference_update(dag.ancestors(s))
+
+    return dag.sort(anc)
+
 
 
 if __name__ == '__main__':
-    scr = '''
-    PCore A {
-        w = 1
-        x1 = 1/x
-        v ~ norm(z, 0.1)
-        x = 0.2
-        y ~ exp(x1)
-        z ~ norm(w, y)
-    }
-    '''
+    a = DAG()
+    a.add_edge('A', 'B')
+    a.add_edge('B', 'C')
+    print(a.descendants('A'))
+    a.nodes['A']['loci'] = [1,2,3]
 
-    js = bn_script_to_json(scr)
-    print(js)
 
-    ex = BayesianNetwork(js)
+    b = a.copy()
+    b.nodes['A']['loci'][2] = 5
 
-    print('\nTo JSON, From JSON')
-    print(ex)
+    print(b.nodes['A']['loci'])
+
+    print(b.in_degree)
+
+    c = DAG()
+    c.add_edge('A', 'B')
+    c.add_edge('A', 'C')
+    c.add_edge('B', 'C')
+    c.add_edge('B', 'D')
+    c.add_edge('C', 'D')
+    print(c.edges)
+
+    print(minimal_dag(c, ['A', 'C']).edges)
+
+    print(minimal_requirements(c, 'D', ['C']))
+
+

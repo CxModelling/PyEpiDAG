@@ -277,8 +277,8 @@ def d_unif(mi, ma):
     return SpDouble(sts.uniform(mi, ma-mi))
 
 
-DistributionCentre.register('unif', d_unif, [vld.Float('mi', default=0),
-                                             vld.Float('ma', default=1.0)])
+DistributionCentre.register('unif', d_unif, [vld.Float('min', default=0),
+                                             vld.Float('max', default=1.0)])
 
 
 def d_chi2(df):

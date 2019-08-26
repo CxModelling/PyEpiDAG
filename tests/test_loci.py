@@ -1,5 +1,4 @@
 import unittest
-import epidag as dag
 import epidag.bayesnet.loci as lc
 
 

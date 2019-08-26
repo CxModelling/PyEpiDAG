@@ -57,7 +57,7 @@ class PriorNodeSet:
     def sample_prior(self, bn):
         vs = dag.sample_minimally(bn, included=self.Nodes, sources=False)
         prior = dag.evaluate_nodes(bn, vs)
-        return dag.Gene(vs, prior)
+        return dag.Chromosome(vs, prior)
 
     def evaluate_prior(self, bn, gene):
         vs = {k: v for k, v in gene if k in self.Nodes}

@@ -30,7 +30,7 @@ def get_sufficient_nodes(g, included, given=None):
 
 def get_minimal_nodes(g, included, given=None):
     """
-    Find the required nodes to assess the included nodes without considering given nodes
+    Find the required nodes to assess the included nodes without given nodes
     :param g: a directed acyclic graph
     :param included: targeted nodes
     :param given: certain nodes

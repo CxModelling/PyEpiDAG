@@ -122,7 +122,7 @@ class DistributionLoci(Loci):
         return parse_distribution(self.Func, loc=loc)
 
     def render(self, pas=None):
-        return self.get_distribution(pas).render()
+        return self.get_distribution(pas).sample()
 
     def fill(self, gene):
         gene[self.Name] = self.render(gene)
