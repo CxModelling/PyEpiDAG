@@ -181,6 +181,22 @@ class BayesianNetwork:
     def is_rv(self, node):
         return isinstance(self[node], DistributionLoci)
 
+    def has_randomness(self, node, given=None):
+        if self.is_rv(node):
+            return True
+        if given:
+            req = dag.minimal_requirements(self.DAG, node, given)
+            req = [d for d in req if d not in given]
+        else:
+            req = self.DAG.ancestors(node)
+
+        for d in req:
+            if self.is_rv(d):
+                return True
+        else:
+            return False
+
+
     def __getitem__(self, item):
         return self.DAG.nodes[item]['loci']
 

@@ -76,7 +76,8 @@ def merge_dag(dag1, dag2):
 
 def minimal_dag(dag, nodes):
     nodes = dag.sort(nodes)
-    to_collect = set()
+    to_collect = set(nodes
+                     )
     for i in range(len(nodes)):
         for j in range(i, len(nodes)):
             for pth in nx.all_simple_paths(dag, nodes[i], nodes[j]):

@@ -224,7 +224,6 @@ def analyse_node_type(bn, root=None, report=False):
     A node which can carry stochastic effects must not be an ancestor of nodes in lower models.
 
     :param bn: BayesNet, a Bayesian Network
-    :param bn: BayesNet
     :param root: root node group
     :param report: True if report print needed
     :type report: bool
