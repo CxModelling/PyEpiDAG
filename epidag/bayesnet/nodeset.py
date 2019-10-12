@@ -108,6 +108,12 @@ class NodeSet:
             else:
                 self.FixedNodes.add(d)
 
+        for d in bn.sort(self.FloatingNodes):
+            if not bn.has_randomness(d, self.FixedNodes):
+                self.FixedNodes.add(d)
+                self.FloatingNodes.remove(d)
+
+
         rqs = dict()
         self.ListeningNodes = set()  # requirements for floating nodes (giving values when needed)
         self.ExoNodes = set()  # requirements for fixed nodes (giving values at initialisation)
@@ -237,7 +243,7 @@ if __name__ == '__main__':
         e = d + c
     }
     '''
-                                   )
+    )
 
     nr = NodeSet('root', as_fixed=['a'])
     ns = NodeSet('med', as_fixed=['b'], as_floating=['d'])

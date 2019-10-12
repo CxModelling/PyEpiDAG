@@ -83,7 +83,7 @@ class NotNull(Argument):
         Argument.__init__(self, name, 'notnull', des, opt)
 
     def check(self, value, resource=None):
-        if value:
+        if value is not None:
             return True
         else:
             raise ValidationError('Missing value')

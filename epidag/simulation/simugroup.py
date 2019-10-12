@@ -1,4 +1,4 @@
-from epidag.simulation.actor import CompoundActor, FrozenSingleActor, FrozenSingleFunctionActor, SingleActor
+from epidag.simulation.actor import CompoundActor, FrozenSingleActor, SingleActor
 from epidag.simulation.parcore import ParameterCore
 from epidag.bayesnet.loci import ExoValueLoci
 import networkx as nx
