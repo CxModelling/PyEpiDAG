@@ -1,5 +1,5 @@
 import epidag.bayesnet.dag as dag
-
+import epidag.simulation.actor as act
 
 __author__ = 'TimeWz'
 __all__ = ['NodeSet']
@@ -18,11 +18,12 @@ class ActorBlueprint:
 
     def compose_actor(self, bn):
         if self.Type is ActorBlueprint.Frozen:
-            return  # todo
+            return  act.FrozenSingleActor(self.Name, bn[self.Name], self.ToRead)
         elif self.Type is ActorBlueprint.Single:
-            return  # todo
+            return  act.SingleActor(self.Name, bn[self.Name], self.ToRead)
         else:
-            return  # todo
+            to_sample = [bn[d] for d in self.ToSample]
+            return  act.CompoundActor(self.Name, bn[self.Name], self.ToRead, to_sample)
 
     def __str__(self):
         st = '{}: {}'.format(self.Type, self.Name)

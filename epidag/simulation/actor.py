@@ -29,9 +29,8 @@ class SimulationActor(metaclass=ABCMeta):
 
 class FrozenSingleActor(SimulationActor):
     def __init__(self, field, loci, pas):
-        SimulationActor.__init__(self, field, loci, list(pas.keys()))
+        SimulationActor.__init__(self, field, loci, pas)
         self.Sampler = None
-        self.update(pas)
 
     def sample(self, pas=None):
         if isinstance(self.Loci, DistributionLoci):
@@ -103,6 +102,8 @@ class Sampler:
     def __init__(self, act: SimulationActor, chr):
         self.Actor = act
         self.Chromosome = chr
+        if isinstance(self.Actor, FrozenSingleActor):
+            self.update(self.Chromosome)
 
     def __call__(self):
         """
@@ -139,13 +140,15 @@ class Sampler:
 if __name__ == '__main__':
     from epidag.bayesnet.loci import *
 
-    f1 = FrozenSingleActor('A', DistributionLoci('A', 'k(a)'), {'a': 1})
+    f1 = FrozenSingleActor('A', DistributionLoci('A', 'k(a)'),  ['a'])
+    f1.update({'a': 1})
     print(f1.sample())
 
     f1.update({'a': 3})
     print(f1.sample())
 
-    f2 = FrozenSingleActor('B', FunctionLoci('B', 'b+4'), {'b': 1})
+    f2 = FrozenSingleActor('B', FunctionLoci('B', 'b+4'), ['b'])
+    f2.update({'b': 1})
     print(f2.sample())
 
     f2.update({'b': 3})
