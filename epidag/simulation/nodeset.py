@@ -53,10 +53,38 @@ class NodeSet:
         self.__will_be_floating = None
         self.Samplers = None
         self.ChildrenSamplers = None
+        self.__frozen = False
+
+    def defrost(self):
+        self.ExoNodes = None
+        self.ListeningNodes = None
+        self.FixedNodes = None
+        self.FloatingNodes = None
+
+        self.__was_fixed = None
+        self.__will_be_floating = None
+        self.Samplers = None
+        self.ChildrenSamplers = None
+        self.__frozen = False
+
 
     def add_child(self, ns):
+        assert not self.__frozen
         self.__children[ns.Name] = ns
         ns.__parent = self
+
+    def new_child(self, name, as_fixed=None, as_floating=None):
+        ns = NodeSet(name, as_fixed, as_floating)
+        self.add_child(ns)
+        return ns
+
+    @property
+    def Children(self):
+        return self.__children
+
+    @property
+    def Parent(self):
+        return self.Parent
 
     def inject_bn(self, bn):
         '''
@@ -64,18 +92,21 @@ class NodeSet:
         :param bn: A well-defined BayesNet
         :return:
         '''
-        assert self.validate_initial_conditions(bn)
+        assert not self.__frozen
+        assert self._validate_initial_conditions(bn)
 
-        self.resolve_local_nodes(bn)
+        self._resolve_local_nodes(bn)
 
-        self.pass_down_fixed()
-        self.raise_up_floating()
-        self.resolve_relations(bn)
-        self.define_sampler_blueprints(bn)
+        self._pass_down_fixed()
+        self._raise_up_floating()
+        self._resolve_relations(bn)
+        self._define_sampler_blueprints(bn)
+        self._sort_fixed_nodes(bn)
+        self.__frozen = True
 
-    def validate_initial_conditions(self, bn):
+    def _validate_initial_conditions(self, bn):
         for ch in self.__children.values():
-            if not ch.validate_initial_conditions(bn):
+            if not ch._validate_initial_conditions(bn):
                 return False
 
         g = bn.DAG
@@ -91,7 +122,7 @@ class NodeSet:
         else:
             return True
 
-    def resolve_local_nodes(self, bn):
+    def _resolve_local_nodes(self, bn):
         g = bn.DAG
         mini = dag.minimal_dag(g, set.union(self.__as_fixed, self.__as_floating)).order()
 
@@ -133,32 +164,30 @@ class NodeSet:
         self.ExoNodes.difference_update(self.FixedNodes)
 
         for ch in self.__children.values():
-            ch.resolve_local_nodes(bn)
+            ch._resolve_local_nodes(bn)
 
-    def pass_down_fixed(self, fixed=None):
+    def _pass_down_fixed(self, fixed=None):
         if self.__parent:
-            self.__was_fixed = fixed if fixed else {}
+            self.__was_fixed = fixed if fixed else set()
         else:
             self.__was_fixed = set()
         all_fixed = set.union(self.__was_fixed, self.FixedNodes)
         for ch in self.__children.values():
-            ch.pass_down_fixed(all_fixed)
+            ch._pass_down_fixed(all_fixed)
 
-    def hoist_node(self, node):
+    def _hoist_node(self, node):
         if node not in self.__was_fixed:
             self.FixedNodes.add(node)
             self.__was_fixed.add(node)
 
-    def raise_up_floating(self):
+    def _raise_up_floating(self):
         self.__will_be_floating = set()
         for ch in self.__children.values():
-            self.__will_be_floating.update(ch.raise_up_floating())
+            self.__will_be_floating.update(ch._raise_up_floating())
 
         return set.union(self.__will_be_floating, self.FloatingNodes)
 
-    def resolve_relations(self, bn):
-        g = bn.DAG
-
+    def _resolve_relations(self, bn):
         to_shift = set([d for d in self.ExoNodes if d not in self.__was_fixed])
 
         to_hoist = [d for d in to_shift if not bn.has_randomness(d, self.__was_fixed)]
@@ -168,34 +197,41 @@ class NodeSet:
         self.FixedNodes.update(to_shift)
 
         for d in to_hoist:
-            self.__parent.hoist_node(d)
+            self.__parent._hoist_node(d)
 
         for ch in self.__children.values():
-            ch.resolve_relations(bn)
+            ch._resolve_relations(bn)
 
-    def define_sampler_blueprints(self, bn):
+    def _define_sampler_blueprints(self, bn):
+        """
+
+        :param bn:
+        :return:
+        """
         g = bn.DAG
         self.Samplers = dict()
         self.ChildrenSamplers = {ch: dict() for ch in self.__children.keys()}
 
         af = set.union(self.__was_fixed, self.FixedNodes)
 
+        # If all parent nodes have been fixed without local changes -> f, f
+        # If all parent nodes have been fixed but have local changes -> s, f
+        # If any parent nodes is still floating -> c, c
         for d in set.union(self.FloatingNodes, self.__will_be_floating):
             loci = bn[d]
             pars = set(loci.Parents)
 
-            if pars < af:
+            if pars <= af: # if all parent nodes had been fixed before
                 self.Samplers[d] = ActorBlueprint(d, ActorBlueprint.Frozen, pars, None)
 
                 for k, ch in self.__children.items():
                     if d in ch.FloatingNodes:
                         if set.intersection(pars, ch.FixedNodes):
-                            self.ChildrenSamplers[k][d] = ActorBlueprint(d, ActorBlueprint.Single,
-                                                                         pars, None)
+                            self.ChildrenSamplers[k][d] = ActorBlueprint(d, ActorBlueprint.Single, pars, None)
                         else:
-                            self.ChildrenSamplers[k][d] = None
+                            self.ChildrenSamplers[k][d] = self.Samplers[d]
                     elif d in ch.__will_be_floating:
-                        self.ChildrenSamplers[k][d] = None
+                        self.ChildrenSamplers[k][d] = self.Samplers[d]
             else:
                 req = dag.minimal_requirements(g, d, af)
                 to_read = af.intersection(req)
@@ -203,11 +239,16 @@ class NodeSet:
                 self.Samplers[d] = ActorBlueprint(d, ActorBlueprint.Compound, to_read, to_sample)
 
                 for k, ch in self.__children.items():
-                    if d in ch.__will_be_floating:
-                        self.ChildrenSamplers[k][d] = None
+                    if d in ch.FloatingNodes or d in ch.__will_be_floating:
+                        self.ChildrenSamplers[k][d] = self.Samplers[d]
 
         for ch in self.__children.values():
-            ch.define_sampler_blueprints(bn)
+            ch._define_sampler_blueprints(bn)
+
+    def _sort_fixed_nodes(self, bn):
+        self.FixedNodes = bn.sort(self.FixedNodes)
+        for ch in self.__children.values():
+            ch._sort_fixed_nodes(bn)
 
     def print_samplers(self, i=0):
         ind = i * ' '
@@ -247,12 +288,11 @@ if __name__ == '__main__':
     )
 
     nr = NodeSet('root', as_fixed=['a'])
-    ns = NodeSet('med', as_fixed=['b'], as_floating=['d'])
-    ne = NodeSet('leaf', as_fixed=['e'])
-    nr.add_child(ns)
-    ns.add_child(ne)
+    ns = nr.new_child('med', as_fixed=['b'], as_floating=['d'])
+    ne = ns.new_child('leaf', as_fixed=['e'])
 
     nr.inject_bn(bn)
+
     nr.print()
 
     nr.print_samplers()

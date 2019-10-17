@@ -1,6 +1,6 @@
-from epidag.bayesnet import Chromosome
+from epidag.bayesnet import Chromosome, get_offsprings
 from epidag.simulation.actor import FrozenSingleActor, Sampler, CompoundActor
-import networkx as nx
+
 
 __author__ = 'TimeWz667'
 
@@ -12,16 +12,12 @@ class ParameterCore(Chromosome):
         self.SG = sg
         self.Parent = None
         self.Children = dict()
-        self.Actors = dict()
-        self.ChildrenActors = dict()
+        self.Actors = None
+        self.ChildrenActors = None
 
     @property
     def Group(self):
         return self.SG.Name
-
-    @property
-    def Waiting(self):
-        return self.SG.Waiting
 
     def breed(self, nickname, group, exo=None):
         """
@@ -60,8 +56,7 @@ class ParameterCore(Chromosome):
         :type exo:
         :return: prototype parameter core
         """
-        chd = self.SG.breed('prototype', group, self, exo)
-        return chd
+        return self.SG.breed('prototype', group, self, exo)
 
     def duplicate(self, nickname):
         if not self.Parent:
@@ -97,14 +92,13 @@ class ParameterCore(Chromosome):
             pass
 
     def list_samplers(self):
-        li = list(self.Actors.keys())
+        if self.Actors is not None:
+            return list(self.Actors.keys())
+        else:
+            print(self.Parent.ChildrenActors)
+            return list(self.Parent.ChildrenActors[self.Group].keys())
 
-        if self.Parent:
-            actors = self.Parent.ChildrenActors[self.SG.Name]
-            li += list(actors.keys())
-        return li
-
-    def get_samplers(self, include_parent=False):
+    def get_samplers(self):
         """
         Get all the samplers
         :param include_parent: include parent node's samplers or not
@@ -117,11 +111,11 @@ class ParameterCore(Chromosome):
             samplers.update(self.Parent.ChildrenActors[self.SG.Name])
         except AttributeError:
             pass
-        if include_parent:
-            try:
-                samplers.update(self.Parent.get_samplers())
-            except AttributeError:
-                pass
+        #if include_parent:
+        #    try:
+        #        samplers.update(self.Parent.get_samplers())
+        #    except AttributeError:
+        #        pass
         return samplers
 
     def get_sampler(self, sampler):
@@ -130,18 +124,15 @@ class ParameterCore(Chromosome):
         :param sampler: name of the target sampler
         :return:
         """
+        print(self.Actors)
+        print(self.ChildrenActors)
+
         try:
+            actor = self.Parent.ChildrenActors[self.SG.Name][sampler]
+        except AttributeError:
             actor = self.Actors[sampler]
         except KeyError:
-            try:
-                actor = self.Parent.ChildrenActors[self.SG.Name][sampler]
-            except AttributeError:
-                raise KeyError('No {} found'.format(sampler))
-            except KeyError:
-                try:
-                    actor = self.Parent.get_sampler(sampler)
-                except KeyError as e:
-                    raise e
+            actor = self.Actors[sampler]
 
         return Sampler(actor, self)
 
@@ -186,13 +177,13 @@ class ParameterCore(Chromosome):
         except AttributeError:
             g = bn.DAG
         if isinstance(imp, dict):
-            shocked = set.union(*[set(nx.descendants(g, k)) for k in imp.keys()])
+            shocked = get_offsprings(g, imp.keys())
             non_imp = [k for k, v in imp.items() if v is None]
             imp = {k: v for k, v in imp.items() if v is not None}
             shocked.difference_update(imp.keys())
             shocked = shocked.union(non_imp)
         elif isinstance(imp, list):
-            shocked = set.union(*[set(nx.descendants(g, k)) for k in imp])
+            shocked = get_offsprings(g, imp)
             shocked = shocked.union(imp)
             imp = dict()
         else:
@@ -212,8 +203,8 @@ class ParameterCore(Chromosome):
         for v in self.Children.values():
             v.__set_response(imp, shocked)
 
-        if imp:
-            self.LogLikelihood = 0
+        if shocked_locus:
+            self.reset_probability()
 
     def __dict__(self):
         return dict(self.Locus)
@@ -264,7 +255,7 @@ class ParameterCore(Chromosome):
             sg = sc.SGs[self.Group]
         else:
             sg = self.SG
-        pc_new = sg.generate(self.Nickname, dict(self))
+        pc_new = sg.generate(self.Nickname, exo=dict(self))
         pc_new.LogLikelihood = self.LogLikelihood
         pc_new.LogPrior = self.LogPrior
 
@@ -289,10 +280,6 @@ class PseudoParameterCore(ParameterCore):
     @property
     def Group(self):
         return self.__group
-
-    @property
-    def Waiting(self):
-        return []
 
     def breed(self, nickname, group, exo=None):
         """
@@ -360,9 +347,6 @@ class PseudoParameterCore(ParameterCore):
         except KeyError:
             pass
 
-    def list_samplers(self):
-        return list()
-
     def get_samplers(self, include_parent=False):
         """
         Get all the samplers
@@ -411,7 +395,7 @@ class PseudoParameterCore(ParameterCore):
             sel = sel.get_child(name)
         return sel
 
-    def impulse(self, imp):
+    def impulse(self, imp, bn=None):
         """
         Do interventions
         :param imp: dict(node: value) or list(node), intervention

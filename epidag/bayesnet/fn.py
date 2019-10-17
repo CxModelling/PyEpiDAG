@@ -4,9 +4,10 @@ import numpy as np
 
 __author__ = 'TimeWz667'
 __all__ = ['NodeGroup',
-           'get_sufficient_nodes', 'get_minimal_nodes',
-           'form_hierarchy', 'formulate_blueprint',
-           'analyse_node_type', 'evaluate_nodes']
+           'get_sufficient_nodes', 'get_minimal_nodes', 'get_offsprings',
+           # 'form_hierarchy', 'formulate_blueprint',
+           # 'analyse_node_type',
+           'evaluate_nodes']
 
 
 def get_sufficient_nodes(g, included, given=None):
@@ -39,6 +40,16 @@ def get_minimal_nodes(g, included, given=None):
     suf = get_sufficient_nodes(g, included=included, given=given)
     suf.difference_update(given)
     return suf
+
+
+def get_offsprings(g, nodes):
+    """
+    Find the offspring nodes in a DAG
+    :param g: a directed acyclic graph
+    :param nodes: targeted nodes
+    :return: a set of offspring nodes
+    """
+    return set.union(*[g.descendants(d) for d in nodes])
 
 
 class NodeGroup:

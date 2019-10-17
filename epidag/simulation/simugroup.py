@@ -1,126 +1,93 @@
-from epidag.simulation.actor import CompoundActor, FrozenSingleActor, SingleActor
 from epidag.simulation.parcore import ParameterCore
-from epidag.bayesnet.loci import ExoValueLoci
-import networkx as nx
-from collections import namedtuple
 
 __author__ = 'TimeWz667'
 
 
-ActorBlueprint = namedtuple('ActorBlueprint', ('Name', 'Type', 'TypeH', 'Flow'))
-
-
 class SimulationGroup:
-    def __init__(self, name, fixed, random, actors, exo, pas):
-        self.Name = name
+    def __init__(self, ns, hoist=True):
+        self.Name = ns.Name
         self.SC = None
-        self.Listening = list(pas)
-        self.Waiting = set(exo)
-        self.BeFixed = set(fixed)
-        self.BeRandom = set(random)
-        self.BeActors = set(actors)
-        self.FixedChain = None
-        self.Children = list()
-        self.__actor_blueprints = None
+        self.BN = None
+        self.Children = list(ns.Children.keys())
+        self.Hoisting = hoist
+        self.Listening = list(ns.ListeningNodes)
+        self.Exogenous = list(ns.ExoNodes)
+        self.Fixed = list(ns.FixedNodes)
+        self.Floating = list(ns.FloatingNodes)
+        self.Actors = ns.Samplers
+        self.ChildrenActors = dict(ns.ChildrenSamplers)
 
     def set_simulation_core(self, sc):
         self.SC = sc
-        bn = sc.BN
-        self.FixedChain = [bn[node] for node in bn.sort(self.BeFixed)]
+        self.BN = self.SC.BN
 
-    @property
-    def ActorBlueprints(self):
-        if not self.__actor_blueprints:
-            bps = list()
-
-            bn = self.SC.BN
-            g = bn.DAG
-
-            for act in self.BeActors:
-                pa = set(g.predecessors(act))
-                if pa.intersection(self.BeRandom):
-                    flow = set.intersection(nx.ancestors(g, act), self.BeRandom)
-                    flow = bn.sort(flow)
-                    flow = [bn[nod] for nod in flow]
-                    bps.append(ActorBlueprint(act, 'c', 'c', flow))
-                elif pa.intersection(self.Waiting):
-                    bps.append(ActorBlueprint(act, 's', 's', None))
-                elif pa.intersection(self.BeFixed):
-                    bps.append(ActorBlueprint(act, 'f', 's', None))
-                else:
-                    bps.append(ActorBlueprint(act, 'f', 'f', None))
-
-            self.__actor_blueprints = bps
-
-        return self.__actor_blueprints
-
-    def actors(self, pas=None, hoist=True):
-        bn = self.SC.BN
-        actors = dict()
-        if hoist:
-            for act in self.ActorBlueprints:
-                name = act.Name
-                if act.TypeH == 'c':
-                    actor = CompoundActor(name, act.Flow, bn[name])
-                elif act.TypeH == 'f':
-                    loc = bn[name]
-                    try:
-                        actor = FrozenSingleActor(name, loc, pas)
-                    except AttributeError:
-                        actor = FrozenSingleFunctionActor(name, loc, pas)
-                else:
-                    actor = SingleActor(name, bn[name])
-
-                actors[act.Name] = actor
-        else:
-            for act in self.ActorBlueprints:
-                name = act.Name
-                if act.Type == 'c':
-                    actor = CompoundActor(name, act.Flow, bn[name])
-                elif act.Type == 'f':
-                    actor = FrozenSingleActor(name, bn[name], pas)
-                else:
-                    actor = SingleActor(name, bn[name])
-
-                actors[act.Name] = actor
-
-        return actors
-
-    def generate(self, nickname, exo=None, parent=None, actors=True):
+    def generate(self, nickname, parent=None, exo=None):
         """
         Generate a simulation core with a nickname
         :param nickname: nickname of the generated core
-        :param exo: dict, input exogenous variables
         :param parent: ParameterCore, parent Parameter
-        :param actors: bool, true if actors need to be installed locally
+        :param exo: dict, input exogenous variables
         :return:
         """
-        pc = ParameterCore(nickname, self, None, 0)
+        exo = dict(exo) if exo else dict()
+        vs = dict(exo)
+        for d in self.Exogenous:
+            if d not in vs:
+                vs[d] = parent[d]
+
+        prior = 0
+        for d in self.Fixed:
+            loci = self.BN[d]
+            if d not in vs:
+                loci.fill(vs)
+            prior += loci.evaluate(vs)
+
+        vs = {d: vs[d] for d in self.Fixed}
+        vs.update(exo)
+
+        pc = ParameterCore(nickname, self, vs, prior)
         if parent is not None:
             pc.Parent = parent
-        exo = exo if exo else dict()
-        if exo:
-            pc.Locus.update(exo)
 
-        prior = 0
-        for loci in self.FixedChain:
-            if not isinstance(loci, ExoValueLoci):
-                if loci.Name not in pc.Locus:
-                    loci.fill(pc)
-                prior += loci.evaluate(pc)
-        pc.LogPrior = prior
-        if actors:
-            pc.Actors = self.actors(pc)
-
+        self.set_actors(pc)
         return pc
 
-    def set_response(self, imp, fixed, actors, hoist, pc):
+    def set_actors(self, pc):
+        if not pc.Parent or not self.Hoisting:
+            pc.Actors = dict()
+            for k, act in self.Actors.items():
+                pc.Actors[k] = act.compose_actor(self.BN)
+        else:
+            self.set_child_actors(pc.Parent, pc.Group)
+
+    def set_child_actors(self, parent, sg):
+        if parent.ChildrenActors is None:
+            parent.ChildrenActors = dict()
+
+        if sg in parent.ChildrenActors:
+            return
+
+        actors = dict()
+        bps = self.SC.get(parent.Group).ChildrenActors[sg]
+        for k, act in bps.items():
+            try:
+                actors[k] = act.compose_actor(self.BN)
+            except AttributeError:
+                continue
+        parent.ChildrenActors[sg] = actors
+
+    def update_actors(self, pc, pars):
+        pass
+
+    def set_response(self, imp, shocked, actors, hoist, pc):
         prior = 0
-        for loci in self.FixedChain:
-            if loci.Name in imp:
-                pc.Locus[loci.Name] = imp[loci.Name]
-            elif loci.Name in fixed:
-                loci.fill(pc)
+        for d in self.Fixed:
+            loci = self.BN[d]
+            if d in shocked:
+                try:
+                    pc.Locus[d] = imp[d]
+                except KeyError:
+                    loci.fill(pc)
             prior += loci.evaluate(pc)
 
         pc.LogPrior = prior
@@ -128,50 +95,32 @@ class SimulationGroup:
         for act in actors:
             pc.Actors[act].update(pc)
 
-        for chd, acts in hoist.items():
-            for act in acts:
-                pc.ChildrenActors[chd][act].update(pc)
-
-    def set_child_actors(self, pa, group):
-        if group not in self.Children:
-            raise KeyError('No matched group')
-
-        try:
-            return pa.ChildrenActors[group]
-        except KeyError:
-            ca = self.SC[group].actors(None, True)
-            pa.ChildrenActors[group] = ca
-            return ca
+        for k, vs in hoist.items():
+            for act in vs:
+                pc.ChildrenActors[k][act].update(pc)
 
     def breed(self, nickname, group, pa, exo):
         if group not in self.Children:
             raise KeyError('No matched group')
 
-        ch_sg = self.SC[group]
+        chd = self.SC[group].generate(nickname, parent=pa, exo=exo)
 
-        hoist = self.SC.Hoist
-        chd = ch_sg.generate(nickname, exo=exo, parent=pa, actors=not hoist)
-
-        if hoist:
-            if group not in pa.ChildrenActors:
-                pa.ChildrenActors[group] = ch_sg.actors(chd, True)
-        else:
-            chd.Actors = ch_sg.actors(chd, False)
         return chd
 
     def __repr__(self):
         return '{}({}|{}|{})->{}'.format(self.Name,
-                                         self.BeFixed if self.BeFixed else '.',
-                                         self.BeRandom if self.BeRandom else '.',
-                                         self.BeActors if self.BeActors else '.',
+                                         self.Exogenous if self.Exogenous else '.',
+                                         self.Listening if self.Listening else '.',
+                                         self.Fixed if self.Fixed else '.',
+                                         self.Floating if self.Floating else '.',
                                          self.Children)
 
     def to_json(self):
         return {
             'Name': self.Name,
+            'Exogenous': list(self.Exogenous),
             'Listening': list(self.Listening),
-            'BeFixed': list(self.BeFixed),
-            'BeRandom': list(self.BeRandom),
-            'BeActors': list(self.BeActors),
+            'BeFixed': list(self.Fixed),
+            'BeFloating': list(self.Floating),
             'Children': list(self.Children)
         }

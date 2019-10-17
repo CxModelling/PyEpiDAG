@@ -24,26 +24,32 @@ Pcore BMI {
 
 bn = dag.bayes_net_from_script(scr)
 
-hie = {
-    'country': ['area'],
-    'area': ['b0r', 'ps', 'foodstore', 'agA', 'agB'],
-    'agA': ['bmiA', 'ageA', 'sexA'],
-    'agB': ['bmiB', 'ageB']
-}
 
-sc = dag.as_simulation_core(bn, hie,
-                            root='country',
-                            random=['muA'],
-                            out=['foodstore', 'bmiA', 'bmiB'])
+root = dag.NodeSet('country')
+node_area = root.new_child('area', as_fixed=['b0r', 'ps'], as_floating=['foodstore'])
+node_area.new_child('agA', as_fixed=['ageA', 'sexA'], as_floating=['bmiA'])
+node_area.new_child('agB', as_fixed=['ageB'], as_floating=['bmiB'])
+
+sc = dag.as_simulation_core(bn, root, True)
+
+root.print()
+root.print_samplers()
 
 pc = sc.generate('Taiwan', {'sd': 1})
+print(pc.list_samplers())
 pc_taipei = pc.breed('Taipei', 'area')
-pc_taipei.breed('A1', 'agA')
-pc_taipei.breed('A2', 'agA')
+pc_taipei.breed('A1', 'agA', {'ageA': 5})
+pc_taipei.breed('A2', 'agA', {'ageA': 4})
 pc_taipei.breed('B1', 'agB')
+print(pc_taipei.list_samplers())
 b2 = pc_taipei.breed('B2', 'agB')
 b2.get_sibling('B3')
 pc.deep_print()
+print(b2.list_samplers())
+
+sam_bmiB = b2.get_sampler('bmiB')
+
+print(sam_bmiB.sample(5))
 
 pc.impulse({'b1': 100})
 pc.deep_print()
