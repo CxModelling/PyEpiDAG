@@ -51,8 +51,8 @@ class NodeSet:
 
         self.__was_fixed = None
         self.__will_be_floating = None
-        self.Samplers = None
-        self.ChildrenSamplers = None
+        self.LocalSamplers = None
+        self.SharedSamplers = None
         self.__frozen = False
 
     def defrost(self):
@@ -199,6 +199,14 @@ class NodeSet:
         for d in to_hoist:
             self.__parent._hoist_node(d)
 
+
+        to_shift = [d for d in self.ListeningNodes if d not in self.__was_fixed]
+        to_shift = [d for d in to_shift if not bn.is_exogenous(d)]
+        to_shift = [d for d in to_shift if bn.is_deterministic(d, self.__was_fixed)]
+        self.ListeningNodes.difference_update(to_shift)
+        self.FixedNodes.update(to_shift)
+
+
         for ch in self.__children.values():
             ch._resolve_relations(bn)
 
@@ -209,8 +217,8 @@ class NodeSet:
         :return:
         """
         g = bn.DAG
-        self.Samplers = dict()
-        self.ChildrenSamplers = {ch: dict() for ch in self.__children.keys()}
+        self.LocalSamplers = dict()
+        self.SharedSamplers = dict()
 
         af = set.union(self.__was_fixed, self.FixedNodes)
 
@@ -222,25 +230,18 @@ class NodeSet:
             pars = set(loci.Parents)
 
             if pars <= af: # if all parent nodes had been fixed before
-                self.Samplers[d] = ActorBlueprint(d, ActorBlueprint.Frozen, pars, None)
+                self.LocalSamplers[d] = ActorBlueprint(d, ActorBlueprint.Frozen, pars, None)
+                if set.intersection(pars, self.FixedNodes):
 
-                for k, ch in self.__children.items():
-                    if d in ch.FloatingNodes:
-                        if set.intersection(pars, ch.FixedNodes):
-                            self.ChildrenSamplers[k][d] = ActorBlueprint(d, ActorBlueprint.Single, pars, None)
-                        else:
-                            self.ChildrenSamplers[k][d] = self.Samplers[d]
-                    elif d in ch.__will_be_floating:
-                        self.ChildrenSamplers[k][d] = self.Samplers[d]
+                    self.SharedSamplers[d] = ActorBlueprint(d, ActorBlueprint.Single, pars, None)
+                else:
+                    self.SharedSamplers[d] = self.LocalSamplers[d]
             else:
                 req = dag.minimal_requirements(g, d, af)
-                to_read = af.intersection(req)
+                to_read = [n for n in req if n in af or bn.is_exogenous(n)]
                 to_sample = [n for n in req if n not in to_read]
-                self.Samplers[d] = ActorBlueprint(d, ActorBlueprint.Compound, to_read, to_sample)
-
-                for k, ch in self.__children.items():
-                    if d in ch.FloatingNodes or d in ch.__will_be_floating:
-                        self.ChildrenSamplers[k][d] = self.Samplers[d]
+                actor = ActorBlueprint(d, ActorBlueprint.Compound, to_read, to_sample)
+                self.LocalSamplers[d] = self.SharedSamplers[d] = actor
 
         for ch in self.__children.values():
             ch._define_sampler_blueprints(bn)
@@ -253,7 +254,7 @@ class NodeSet:
     def print_samplers(self, i=0):
         ind = i * ' '
         print('{}NodeSet {}'.format((i - 2) * ' ' + '|-' if i else '', self.Name))
-        for bp in self.Samplers.values():
+        for bp in self.LocalSamplers.values():
             print('{}|-{}'.format(ind, bp))
 
         for ch in self.__children.values():

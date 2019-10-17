@@ -74,7 +74,8 @@ class ParameterCore(Chromosome):
         if collect_pars:
             for k, v in self.Parent:
                 self[k] = v
-            self.Actors.update(self.Parent.get_samplers())
+            self.SG.set_local_actors(self)
+
         self.Parent = None
 
     def remove_children(self, k):
@@ -91,65 +92,52 @@ class ParameterCore(Chromosome):
         except KeyError:
             pass
 
-    def list_samplers(self):
-        if self.Actors is not None:
-            return list(self.Actors.keys())
-        else:
-            print(self.Parent.ChildrenActors)
-            return list(self.Parent.ChildrenActors[self.Group].keys())
+    def list_actors(self, shared=True):
+        return list(self.get_actors(shared).keys())
 
-    def get_samplers(self):
+    def get_actors(self, shared=True):
         """
-        Get all the samplers
-        :param include_parent: include parent node's samplers or not
-        :type include_parent: bool
+        Get all the actors
+        :param shared: true for the shared version
         :return: Random variable generators
         :rtype: dict
         """
-        samplers = dict(self.Actors)
-        try:
-            samplers.update(self.Parent.ChildrenActors[self.SG.Name])
-        except AttributeError:
-            pass
-        #if include_parent:
-        #    try:
-        #        samplers.update(self.Parent.get_samplers())
-        #    except AttributeError:
-        #        pass
-        return samplers
+        if shared and self.Parent:
+            try:
+                return self.Parent.ChildrenActors[self.Group]
+            except (KeyError, TypeError):
+                self.SG.put_shared_actors(self)
+                return self.Parent.ChildrenActors[self.Group]
+        elif self.Actors is None:
+            self.SG.put_local_actors(self)
+        return self.Actors
 
-    def get_sampler(self, sampler):
+    def get_samplers(self, shared=True):
+        actors = self.get_actors(shared)
+        return {k: Sampler(actor, self) for k, actor in actors.items()}
+
+    def get_sampler(self, sampler, shared=True):
         """
         Get a sampler of a specific variable
         :param sampler: name of the target sampler
+        :param shared: true for the shared version
         :return:
         """
-        print(self.Actors)
-        print(self.ChildrenActors)
-
-        try:
-            actor = self.Parent.ChildrenActors[self.SG.Name][sampler]
-        except AttributeError:
-            actor = self.Actors[sampler]
-        except KeyError:
-            actor = self.Actors[sampler]
-
+        actor = self.get_actors(shared)[sampler]
         return Sampler(actor, self)
 
     def get_child(self, name):
         return self.Children[name]
 
-    def get_child_actor(self, group, name):
-        try:
-            return self.get_child_actors(group)[name]
-        except KeyError:
-            raise KeyError('Actor not found')
+    def get_child_samplers(self, group):
+        assert group in self.SG.Children
 
-    def get_child_actors(self, group):
         try:
             ca = self.ChildrenActors[group]
         except KeyError:
-            ca = self.SG.set_child_actors(self, group)
+
+
+            ca = self.SG.SC[group].get_shared_actors(self)
         return ca
 
     def find_descendant(self, address):
@@ -193,10 +181,20 @@ class ParameterCore(Chromosome):
 
     def __set_response(self, imp, shocked):
         shocked_locus = [s for s in shocked if s in self.Locus]
-        shocked_actors = [k for k, v in self.Actors.items() if k in shocked and isinstance(v, FrozenSingleActor)]
+        try:
+            shocked_actors = [k for k, v in self.Actors.items() if k in shocked and isinstance(v, FrozenSingleActor)]
+        except AttributeError:
+            shocked_actors = list()
+
         shocked_hoist = dict()
-        for k, v in self.ChildrenActors.items():
-            shocked_hoist[k] = [s for s, t in v.items() if s in shocked and isinstance(t, FrozenSingleActor)]
+        try:
+            for k, v in self.ChildrenActors.items():
+                try:
+                    shocked_hoist[k] = [s for s, t in v.items() if s in shocked and isinstance(t, FrozenSingleActor)]
+                except AttributeError:
+                    shocked_hoist[k] = dict()
+        except AttributeError:
+            pass
 
         self.SG.set_response(imp, shocked_locus, shocked_actors, shocked_hoist, self)
 

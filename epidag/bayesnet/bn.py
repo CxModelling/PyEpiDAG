@@ -181,6 +181,16 @@ class BayesianNetwork:
     def is_rv(self, node):
         return isinstance(self[node], DistributionLoci)
 
+    def is_deterministic(self, node, given=None):
+        if isinstance(self[node], ValueLoci):
+            return True
+        if given:
+            req = dag.minimal_requirements(self.DAG, node, given)
+            req = [d for d in req if d not in given]
+            return all(isinstance(self[d], ValueLoci) for d in req)
+        else:
+            return False
+
     def has_randomness(self, node, given=None):
         if self.is_rv(node):
             return True

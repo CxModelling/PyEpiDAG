@@ -30,22 +30,22 @@ node_area = root.new_child('area', as_fixed=['b0r', 'ps'], as_floating=['foodsto
 node_area.new_child('agA', as_fixed=['ageA', 'sexA'], as_floating=['bmiA'])
 node_area.new_child('agB', as_fixed=['ageB'], as_floating=['bmiB'])
 
-sc = dag.as_simulation_core(bn, root, True)
+sc = dag.as_simulation_core(bn, root)
 
 root.print()
 root.print_samplers()
 
 pc = sc.generate('Taiwan', {'sd': 1})
-print(pc.list_samplers())
+print(pc.list_actors())
 pc_taipei = pc.breed('Taipei', 'area')
 pc_taipei.breed('A1', 'agA', {'ageA': 5})
 pc_taipei.breed('A2', 'agA', {'ageA': 4})
 pc_taipei.breed('B1', 'agB')
-print(pc_taipei.list_samplers())
+print(pc_taipei.list_actors())
 b2 = pc_taipei.breed('B2', 'agB')
 b2.get_sibling('B3')
 pc.deep_print()
-print(b2.list_samplers())
+print(b2.list_actors())
 
 sam_bmiB = b2.get_sampler('bmiB')
 
@@ -57,7 +57,7 @@ pc.deep_print()
 
 area_proto = pc.get_prototype('area')
 area_proto.print()
-print(area_proto.get_samplers())
+print(area_proto.list_actors())
 pc.deep_print()
 
 pc_new = pc.clone(copy_sc=True)

@@ -1,21 +1,21 @@
 from epidag.simulation.parcore import ParameterCore
+from epidag.simulation.actor import FrozenSingleActor
 
 __author__ = 'TimeWz667'
 
 
 class SimulationGroup:
-    def __init__(self, ns, hoist=True):
+    def __init__(self, ns):
         self.Name = ns.Name
         self.SC = None
         self.BN = None
         self.Children = list(ns.Children.keys())
-        self.Hoisting = hoist
         self.Listening = list(ns.ListeningNodes)
         self.Exogenous = list(ns.ExoNodes)
         self.Fixed = list(ns.FixedNodes)
         self.Floating = list(ns.FloatingNodes)
-        self.Actors = ns.Samplers
-        self.ChildrenActors = dict(ns.ChildrenSamplers)
+        self.LocalActors = ns.LocalSamplers
+        self.SharedActors = ns.SharedSamplers
 
     def set_simulation_core(self, sc):
         self.SC = sc
@@ -49,35 +49,29 @@ class SimulationGroup:
         if parent is not None:
             pc.Parent = parent
 
-        self.set_actors(pc)
         return pc
 
-    def set_actors(self, pc):
-        if not pc.Parent or not self.Hoisting:
-            pc.Actors = dict()
-            for k, act in self.Actors.items():
-                pc.Actors[k] = act.compose_actor(self.BN)
-        else:
-            self.set_child_actors(pc.Parent, pc.Group)
+    def put_local_actors(self, pc):
+        actors = {k: v.compose_actor(self.BN) for k, v in self.LocalActors.items()}
+        for k, v in actors.items():
+            if isinstance(v, FrozenSingleActor):
+                v.update(pc)
+        pc.Actors = actors
 
-    def set_child_actors(self, parent, sg):
+    def put_shared_actors_on_parent(self, parent):
+        actors = {k: v.compose_actor(self.BN) for k, v in self.SharedActors.items()}
+        for k, v in actors.items():
+            if isinstance(v, FrozenSingleActor):
+                v.update(parent)
         if parent.ChildrenActors is None:
             parent.ChildrenActors = dict()
+        parent.ChildrenActors[self.Name] = actors
 
-        if sg in parent.ChildrenActors:
-            return
-
-        actors = dict()
-        bps = self.SC.get(parent.Group).ChildrenActors[sg]
-        for k, act in bps.items():
-            try:
-                actors[k] = act.compose_actor(self.BN)
-            except AttributeError:
-                continue
-        parent.ChildrenActors[sg] = actors
-
-    def update_actors(self, pc, pars):
-        pass
+    def put_shared_actors(self, pc):
+        parent = pc.Parent
+        if parent is None:
+            raise AttributeError('Root node cannot share samplers')
+        self.put_shared_actors_on_parent(parent)
 
     def set_response(self, imp, shocked, actors, hoist, pc):
         prior = 0

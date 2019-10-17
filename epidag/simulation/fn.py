@@ -5,7 +5,7 @@ __author__ = 'TimeWz667'
 __all__ = ['as_simulation_core', 'quick_build_parameter_core']
 
 
-def as_simulation_core(bn, ns: NodeSet, hoist=True):
+def as_simulation_core(bn, ns: NodeSet):
     """
     a blueprint of a simulation model based on given a Bayesian network.
     It describes every node in the network as 1) fixed variable, 2) random variable, 3) exposed distribution
@@ -17,7 +17,7 @@ def as_simulation_core(bn, ns: NodeSet, hoist=True):
     :return: a simulation model
     """
     ns.inject_bn(bn)
-    return SimulationCore(bn, ns, hoist)
+    return SimulationCore(bn, ns)
 
 
 def quick_build_parameter_core(script):
