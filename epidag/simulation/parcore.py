@@ -135,8 +135,6 @@ class ParameterCore(Chromosome):
         try:
             ca = self.ChildrenActors[group]
         except KeyError:
-
-
             ca = self.SG.SC[group].get_shared_actors(self)
         return ca
 

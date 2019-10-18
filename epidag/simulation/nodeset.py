@@ -211,11 +211,6 @@ class NodeSet:
             ch._resolve_relations(bn)
 
     def _define_sampler_blueprints(self, bn):
-        """
-
-        :param bn:
-        :return:
-        """
         g = bn.DAG
         self.LocalSamplers = dict()
         self.SharedSamplers = dict()
@@ -295,5 +290,3 @@ if __name__ == '__main__':
     nr.inject_bn(bn)
 
     nr.print()
-
-    nr.print_samplers()
