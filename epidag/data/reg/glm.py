@@ -9,9 +9,9 @@ __all__ = ['LogisticRegression', 'PoissonRegression']
 
 
 class LogisticRegression(Regression):
-    def __init__(self, inc, js):
-        self.Intercept = inc
-        self.LC = LinearCombination(js)
+    def __init__(self, js):
+        self.Intercept = js['Intercept']
+        self.LC = LinearCombination(js['Regressors'])
 
     def get_variable_type(self):
         return 'Integer'
@@ -31,9 +31,9 @@ class LogisticRegression(Regression):
 
 
 class PoissonRegression(Regression):
-    def __init__(self, inc, js, offset=0):
-        self.Intercept = inc
-        self.LC = LinearCombination(js)
+    def __init__(self, js, offset=0):
+        self.Intercept = js['Intercept']
+        self.LC = LinearCombination(js['Regressors'])
         self.Offset = offset
 
     def get_variable_type(self):
@@ -61,17 +61,17 @@ if __name__ == '__main__':
         {'Name': 'Male', 'Type': 'Boolean', 'Value': 0.5}
     ]
 
-    lr = LogisticRegression(0, reg)
+    lr = LogisticRegression({'Intercept': 0, 'Regressors': reg})
 
     print(lr.expectation(case1))
-    print(lr.expectation(case2))
-
     print(sum(lr.get_sampler(case1).sample(1000))/1000)
+
+    print(lr.expectation(case2))
     print(sum(lr.get_sampler(case2).sample(1000))/1000)
 
-    pr = PoissonRegression(0, reg)
+    pr = PoissonRegression({'Intercept': 0.1, 'Regressors': reg})
     print(pr.expectation(case1))
-    print(pr.expectation(case2))
-
     print(sum(pr.get_sampler(case1).sample(1000))/1000)
+
+    print(pr.expectation(case2))
     print(sum(pr.get_sampler(case2).sample(1000))/1000)

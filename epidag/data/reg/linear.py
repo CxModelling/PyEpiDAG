@@ -112,10 +112,10 @@ class Regression(metaclass=ABCMeta):
 
 
 class LinearRegression(Regression):
-    def __init__(self, inc, err, js):
-        self.Intercept = inc
-        self.LC = LinearCombination(js)
-        self.Error = err
+    def __init__(self, js):
+        self.Intercept = js['Intercept']
+        self.LC = LinearCombination(js['Regressors'])
+        self.Error = js['SE']
 
     def get_variable_type(self):
         return 'Double'
@@ -147,7 +147,12 @@ if __name__ == '__main__':
     print(lc.predict(case1))
     print(lc.predict(case2))
 
-    lm = LinearRegression(0.5, 2.5, reg)
+    lm = LinearRegression({
+        'Intercept': 0.5,
+        'SE': 2.5,
+        'Regressors': reg
+    })
+
     print(lm)
     print(lm.expectation(case1))
     print(lm.predict(case1))
