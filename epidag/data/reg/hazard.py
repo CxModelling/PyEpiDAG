@@ -110,10 +110,10 @@ class HazardDistribution(AbsDistribution):
         return np.log((s1 - s2)/1E-5)
 
     def mean(self):
-        return self.Hazard.mean()
+        return 1 / self.Hazard.mean() / self.RiskRatio
 
     def std(self):
-        return self.Hazard.std()
+        return pow(self.RiskRatio, -2) / self.Hazard.std()
 
 
 class ZeroInflatedHazardDistribution(HazardDistribution):
