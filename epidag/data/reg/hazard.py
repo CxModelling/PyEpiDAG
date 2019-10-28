@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.random as rd
 from scipy.special import gamma
+from scipy.interpolate import interp1d
 from abc import ABCMeta, abstractmethod
 from epidag.bayesnet.distribution import AbsDistribution
 
@@ -60,6 +61,26 @@ class WeibullHazard(Hazard):
 
     def std(self):
         return np.sqrt(gamma(1+2/self.K) - gamma(1+1/self.K)**2) *self.Lambda
+
+
+class EmpiricalHazard(Hazard):
+    def __init__(self, times, cum_haz):
+        self.MaxTime = max(times)
+        self.MaxHaz = max(cum_haz)
+        self.FnCumHaz = interp1d(times, cum_haz, fill_value=[0, self.MaxHaz])
+        self.FnInvCumHaz = interp1d(cum_haz, times, fill_value=[0, self.MaxTime])
+
+    def cum_hazard(self, t):
+        return self.FnCumHaz(t)
+
+    def inv_cum_hazard(self, h):
+        return self.FnInvCumHaz(h)
+
+    def mean(self):
+        return None # todo
+
+    def std(self):
+        return None # todo
 
 
 class HazardDistribution(AbsDistribution):
