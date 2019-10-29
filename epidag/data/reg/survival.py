@@ -1,11 +1,10 @@
 import numpy as np
 from scipy.special import expit
-from epidag.bayesnet.distribution import parse_distribution
 from epidag.data.reg.hazard import *
 from epidag.data.reg.linear import Regression, LinearCombination
 
 __author__ = 'TimeWz667'
-__all__ = ['CoxRegression']
+__all__ = ['CoxRegression', 'ZeroInflatedCoxRegression']
 
 
 def find_baseline(js):
@@ -15,7 +14,7 @@ def find_baseline(js):
     elif tp == 'weibull':
         return WeibullHazard(js['Lambda'], js['K'])
     elif tp == 'empirical':
-        pass # todo EmpiricalHazard(js['Time'], js['CumHaz'])
+        return EmpiricalHazard(js['Time'], js['CumHaz'])
     raise KeyError('Unknown baseline distribution')
 
 
@@ -41,7 +40,7 @@ class CoxRegression(Regression):
         return HazardDistribution(self.Hazard, self._rr(xs))
 
     def __str__(self):
-        return 'surv(y)~{}'.format(str(self.LC))
+        return 'surv(y){}'.format(str(self.LC))
 
 
 class ZeroInflatedCoxRegression(Regression):
@@ -72,7 +71,8 @@ class ZeroInflatedCoxRegression(Regression):
         return ZeroInflatedHazardDistribution(p, self.Hazard, rr)
 
     def __str__(self):
-        return 'zisurv(y, p)~{}'.format(str(self.LC_rr))
+        return 'zisurv(y, p){}'.format(str(self.LC_rr))
+
 
 if __name__ == '__main__':
     case1 = {'Male': True}

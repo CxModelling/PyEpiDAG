@@ -6,7 +6,7 @@ from abc import ABCMeta, abstractmethod
 from epidag.bayesnet.distribution import AbsDistribution
 
 
-__all__ = ['Hazard', 'ExponentialHazard', 'WeibullHazard',
+__all__ = ['Hazard', 'ExponentialHazard', 'WeibullHazard', 'EmpiricalHazard',
            'HazardDistribution', 'ZeroInflatedHazardDistribution']
 
 
@@ -60,7 +60,7 @@ class WeibullHazard(Hazard):
         return gamma(1+1/self.K) * self.Lambda
 
     def std(self):
-        return np.sqrt(gamma(1+2/self.K) - gamma(1+1/self.K)**2) *self.Lambda
+        return np.sqrt(gamma(1+2/self.K) - gamma(1+1/self.K)**2) * self.Lambda
 
 
 class EmpiricalHazard(Hazard):
@@ -77,10 +77,10 @@ class EmpiricalHazard(Hazard):
         return self.FnInvCumHaz(h)
 
     def mean(self):
-        return None # todo
+        return None  # todo
 
     def std(self):
-        return None # todo
+        return None  # todo
 
 
 class HazardDistribution(AbsDistribution):

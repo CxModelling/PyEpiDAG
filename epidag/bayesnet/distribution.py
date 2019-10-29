@@ -331,6 +331,7 @@ def d_binom(size, prob):
 DistributionCentre.register('binom', d_binom, [vld.PositiveInteger('size', default=1),
                                                vld.Prob('prob', default=0.5)])
 
+
 def d_pois(lam):
     return SpInteger(sts.poisson(mu=lam))
 
