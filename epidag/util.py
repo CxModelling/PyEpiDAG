@@ -13,6 +13,10 @@ __all__ = ['add_math_func', 'MATH_FUNC',
            'parse_function', 'evaluate_function']
 
 
+def ifelse(cond, a, b):
+    return a if cond else b
+
+
 MATH_FUNC = {
     'hypot': np.hypot,
     'exp': np.exp,
@@ -27,7 +31,8 @@ MATH_FUNC = {
     'erf': math.erf,
     'pow': math.pow,
     'logit': sp.logit,
-    'expit': sp.expit
+    'expit': sp.expit,
+    'ifelse': ifelse
 }
 
 
@@ -94,10 +99,10 @@ def parse_parents(seq):
 
 
 class MathExpression:
-    def __init__(self, eq, var, func):
+    def __init__(self, eq, var, fn):
         self.Expression = eq
         self.Var = var
-        self.Func = func
+        self.Func = fn
 
     def __call__(self, loc=None):
         try:
@@ -134,9 +139,9 @@ def ast_to_math_expression(seq_ast, seq=None):
 
 
 class ParsedFunction:
-    def __init__(self, src, func, args):
+    def __init__(self, src, fn, args):
         self.Source = src
-        self.Function = func
+        self.Function = fn
         self.Arguments = args
 
     def get_arguments(self, loc=None):
@@ -209,9 +214,9 @@ def parse_function(seq):
 
 
 class EvaluatedFunction:
-    def __init__(self, src, func, args):
+    def __init__(self, src, fn, args):
         self.Source = src
-        self.Function = func
+        self.Function = fn
         self.Arguments = args
 
     def to_blueprint(self, name):
@@ -236,8 +241,6 @@ class EvaluatedFunction:
 
 def evaluate_function(pf: ParsedFunction, loc=None):
     args = pf.get_arguments(loc)
-    src_arg = [('{}={}'.format(arg['key'], arg['value']) if 'key' in arg else str(arg['value'])) for arg in args]
-    # src = '{}({})'.format(pf.Function, ', '.join(src_arg))
     return EvaluatedFunction(pf.Source, pf.Function, args)
 
 
@@ -251,13 +254,17 @@ if __name__ == '__main__':
     print(me)
     print(me({'x': 2, 'y': 4, 'z': 10}), '\n')
 
-    fn = parse_function('my_func(4*a, "k", k, t=5, s=False)')
-    print(fn)
-    print(fn.to_json())
-    print(fn.to_json({'k': 7}))
-    print(fn.to_json({'k': 7, 'a': 10}))
+    func = parse_function('my_func(4*a, "k", k, t=5, s=False)')
+    print(func)
+    print(func.to_json())
+    print(func.to_json({'k': 7}))
+    print(func.to_json({'k': 7, 'a': 10}))
 
-    fn = evaluate_function(fn, {'k': 7, 'a': 10})
-    print(fn.to_json(), '\n')
+    func = evaluate_function(func, {'k': 7, 'a': 10})
+    print(func.to_json(), '\n')
 
     print(resample([0, -1.2, -1], ['a', 'b', 'c']))
+
+    func = parse_math_expression('ifelse(y > 10, 0, 100)')
+    print(func({'y': 5}))
+    print(func({'y': 15}))
