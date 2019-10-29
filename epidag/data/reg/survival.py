@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.special import expit
 from epidag.bayesnet.distribution import parse_distribution
 from epidag.data.reg.hazard import *
 from epidag.data.reg.linear import Regression, LinearCombination
@@ -43,6 +44,36 @@ class CoxRegression(Regression):
         return 'surv(y)~{}'.format(str(self.LC))
 
 
+class ZeroInflatedCoxRegression(Regression):
+    def __init__(self, js):
+        self.Intercept = js['PrZero']['Intercept']
+        self.LC_pr = LinearCombination(js['PrZero']['Regressors'])
+
+        self.Hazard = find_baseline(js['PrTTE']['Baseline'])
+        self.LC_rr = LinearCombination(js['PrTTE']['Regressors'])
+
+    def get_variable_type(self):
+        return 'Double'
+
+    def _rr(self, xs):
+        return np.exp(self.LC_rr.predict(xs))
+
+    def _p(self, xs):
+        return expit(self.LC_pr.predict(xs)+self.Intercept)
+
+    def expectation(self, xs):
+        return self.get_sampler(xs).mean()
+
+    def predict(self, xs):
+        return self.get_sampler(xs).sample()
+
+    def get_sampler(self, xs):
+        p, rr = self._p(xs), self._rr(xs)
+        return ZeroInflatedHazardDistribution(p, self.Hazard, rr)
+
+    def __str__(self):
+        return 'zisurv(y, p)~{}'.format(str(self.LC_rr))
+
 if __name__ == '__main__':
     case1 = {'Male': True}
     case2 = {'Male': False}
@@ -52,6 +83,7 @@ if __name__ == '__main__':
     ]
 
     cr = CoxRegression({'Baseline': {'Type': 'exp', 'Rate': 1}, 'Regressors': reg})
+    print(cr)
     print(cr.expectation(case1))
     print(sum(cr.get_sampler(case1).sample(1000))/1000)
 
@@ -66,3 +98,21 @@ if __name__ == '__main__':
     print(cr.expectation(case2))
     print(sum(cr.get_sampler(case2).sample(1000)) / 1000)
 
+    reg = {
+        'PrZero': {
+            'Intercept': 0,
+            'Regressors': [{'Name': 'Male', 'Type': 'Boolean', 'Value': 0.5}]
+        },
+        'PrTTE': {
+            'Baseline': {'Type': 'exp', 'Rate': 1},
+            'Regressors': [{'Name': 'Male', 'Type': 'Boolean', 'Value': 0.5}]
+        }
+    }
+
+    zir = ZeroInflatedCoxRegression(reg)
+    print(zir)
+    print(zir.expectation(case1))
+    print(sum(zir.get_sampler(case1).sample(1000)) / 1000)
+
+    print(zir.expectation(case2))
+    print(sum(zir.get_sampler(case2).sample(1000)) / 1000)

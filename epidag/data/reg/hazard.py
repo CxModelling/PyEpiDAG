@@ -117,7 +117,7 @@ class HazardDistribution(AbsDistribution):
 
 
 class ZeroInflatedHazardDistribution(HazardDistribution):
-    def __init__(self, pr: float, haz: Hazard, rr: float):
+    def __init__(self, pr, haz: Hazard, rr):
         HazardDistribution.__init__(self, haz, rr)
         self.Prob = pr
 
@@ -125,7 +125,17 @@ class ZeroInflatedHazardDistribution(HazardDistribution):
         if v <= 0:
             return np.log(self.Prob)
         else:
-            return np.log(1-self.Prob) + HazardDistribution.logpdf(v)
+            return np.log(1-self.Prob) + HazardDistribution.logpdf(self, v)
+
+    def sample(self, n=1, **kwargs):
+        ps = rd.random(n) < self.Prob
+        ts = HazardDistribution.sample(self, n)
+        if n <= 1:
+            return ts if ps[0] < 1 else 0
+        else:
+            ts = np.array(ts)
+            ts[ps > 0] = 0
+            return ts
 
     def mean(self):
         return HazardDistribution.mean(self) * (1-self.Prob)
