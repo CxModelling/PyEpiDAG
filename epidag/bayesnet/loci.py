@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 import re
-from epidag import MATH_FUNC, parse_math_expression, parse_function, ScriptException
+from epidag.util import MATH_FUNC, parse_math_expression, parse_function, ScriptException
+from epidag.data.fn import find_data_sampler
 from epidag.bayesnet.distribution import parse_distribution
 
 __author__ = 'TimeWz667'
@@ -119,7 +120,10 @@ class DistributionLoci(Loci):
 
     def get_distribution(self, pas=None):
         loc = {pa: pas[pa] for pa in self.Parents}
-        return parse_distribution(self.Func, loc=loc)
+        try:
+            return parse_distribution(self.Func, loc=loc)
+        except KeyError:
+            return find_data_sampler(self.Func.Function, loc=loc)
 
     def render(self, pas=None):
         return self.get_distribution(pas).sample()

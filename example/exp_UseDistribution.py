@@ -24,9 +24,9 @@ for di in dists:
     print('')
 
 
-di = 'cat(kv={"M": 3411,"O": 3502,"Y": 52})'
+di = 'cat(kv={"Y": 100, "M": 400, "O": 500})'
 print('p(x): \t', di)
 dist_cat = parse_distribution(di)
 
 print('JSON:\t', dist_cat.to_json())
-print('Counts:\t', Counter(dist_cat.render(10000)))
+print('Counts:\t', Counter(dist_cat.sample(10000)))

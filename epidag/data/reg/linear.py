@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from epidag.bayesnet.distribution import parse_distribution, d_norm
+from epidag.bayesnet.distribution import parse_distribution
 
 __author__ = 'TimeWz667'
 __all__ = ['LinearCombination', 'Regression', 'LinearRegression']
@@ -124,7 +124,7 @@ class LinearRegression(Regression):
         return self.LC.predict(xs) + self.Intercept
 
     def predict(self, xs):
-        return d_norm(self.expectation(xs), self.Error).sample(1)
+        return self.get_sampler(xs).sample(1)
 
     def get_sampler(self, xs):
         return parse_distribution('norm(mu, err)', {'mu': self.expectation(xs), 'err': self.Error})

@@ -1,6 +1,6 @@
 import epidag as dag
 from epidag.bayesnet.loci import *
-from epidag.bayesnet.dag import DAG, merge_dag
+from epidag.bayesnet.dag import DAG
 import re
 import networkx as nx
 from networkx.drawing.nx_agraph import graphviz_layout
@@ -206,7 +206,6 @@ class BayesianNetwork:
         else:
             return False
 
-
     def __getitem__(self, item):
         return self.DAG.nodes[item]['loci']
 
@@ -232,7 +231,7 @@ class BayesianNetwork:
         return 'BayesNet(Name: {}, Nodes: {})'.format(self.Name, self.Order)
 
     def merge(self, name, sub_bn):
-        assert  name != self.Name and name != sub_bn.Name
+        assert name != self.Name and name != sub_bn.Name
 
         bn = self.copy(name)
         bn.defrost()

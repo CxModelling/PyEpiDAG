@@ -5,7 +5,6 @@ __author__ = 'TimeWz'
 __all__ = ['DAG', 'merge_dag', 'minimal_dag', 'minimal_requirements']
 
 
-
 class DAG(nx.DiGraph):
     def __init__(self, data=None, **attr):
         nx.DiGraph.__init__(self, incoming_graph_data=data, **attr)
@@ -49,21 +48,20 @@ class DAG(nx.DiGraph):
         if not isinstance(nodes, list):
             nodes = [nodes]
         nodes = set(nodes)
-        ord = self.order()
-        for s in ord:
+        od = self.order()
+        for s in od:
             if s in nodes:
                 continue
             if nodes.intersection(self.ancestors(s)):
                 self.remove_node(s)
 
-
     def remove_downstream(self, nodes):
         if not isinstance(nodes, list):
             nodes = [nodes]
         nodes = set(nodes)
-        ord = self.order()
-        ord.reverse()
-        for s in ord:
+        od = self.order()
+        od.reverse()
+        for s in od:
             if s in nodes:
                 continue
             if nodes.intersection(self.descendants(s)):
@@ -96,14 +94,12 @@ def minimal_requirements(dag, target, cond):
     return dag.sort(anc)
 
 
-
 if __name__ == '__main__':
     a = DAG()
     a.add_edge('A', 'B')
     a.add_edge('B', 'C')
     print(a.descendants('A'))
-    a.nodes['A']['loci'] = [1,2,3]
-
+    a.nodes['A']['loci'] = [1, 2, 3]
 
     b = a.copy()
     b.nodes['A']['loci'][2] = 5

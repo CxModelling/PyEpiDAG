@@ -1,4 +1,5 @@
 from epidag.util import *
+from epidag.data.fn import *
 import epidag.factory
 from epidag.bayesnet import *
 import epidag.data
@@ -8,6 +9,5 @@ from .fn import *
 from epidag.simulation.fn import *
 from epidag.simulation import NodeSet
 from .bayesnet.fn import *
-
 from .fitting import as_data_model
 from .fitting import as_simulation_data_model
