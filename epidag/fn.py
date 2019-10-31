@@ -1,6 +1,7 @@
 import epidag as dag
 
 __author__ = 'TimeWz667'
+__all__ = ['sample', 'sample_minimally']
 
 
 def sample(bn, cond=None):

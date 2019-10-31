@@ -1,5 +1,5 @@
 import pandas as pd
-from epidag.bayesnet.distribution import CategoricalRV
+from distribution import CategoricalRV
 from .frame import AbsDataSet
 
 __author__ = 'TimeWz667'

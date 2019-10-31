@@ -119,7 +119,6 @@ class Sampler:
         if isinstance(self.Actor, FrozenSingleActor):
             self.Actor.update(self.Chromosome)
 
-
     def sample(self, n=1):
         """
         Sample a list of values

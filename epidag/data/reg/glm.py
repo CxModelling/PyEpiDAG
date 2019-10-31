@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.special import expit
-from epidag.bayesnet.distribution import parse_distribution
+from distribution import parse_distribution
 from epidag.data.reg.linear import LinearCombination, Regression
 
 

@@ -9,7 +9,7 @@ class BayesianModel(metaclass=ABCMeta):
         self.BN = bn
 
     def sample_prior(self):
-        return dag.Gene(dag.sample(self.BN))
+        return dag.Chromosome(dag.sample(self.BN))
 
     def evaluate_prior(self, prior):
         prior.LogPrior = dag.evaluate_nodes(self.BN, prior)

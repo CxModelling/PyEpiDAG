@@ -1,13 +1,12 @@
-from epidag.util import *
-from epidag.data.fn import *
-import epidag.factory
+from epidag.util import add_math_func
+from epidag.data.fn import add_data_func
+from epidag.bayesnet.fn import *
 from epidag.bayesnet import *
+import epidag.factory
 import epidag.data
 import epidag.causality
 import epidag.fitting
-from .fn import *
+from epidag.fn import *
 from epidag.simulation.fn import *
 from epidag.simulation import NodeSet
-from .bayesnet.fn import *
-from .fitting import as_data_model
-from .fitting import as_simulation_data_model
+from epidag.fitting import as_data_model, as_simulation_data_model

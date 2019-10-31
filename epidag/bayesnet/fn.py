@@ -3,7 +3,7 @@ from epidag.bayesnet.loci import ValueLoci, ExoValueLoci
 import numpy as np
 
 __author__ = 'TimeWz667'
-__all__ = ['NodeGroup',
+__all__ = [# 'NodeGroup',
            'get_sufficient_nodes', 'get_minimal_nodes', 'get_offsprings',
            # 'form_hierarchy', 'formulate_blueprint',
            # 'analyse_node_type',

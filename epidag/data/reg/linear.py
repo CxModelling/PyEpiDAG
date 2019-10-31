@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from epidag.bayesnet.distribution import parse_distribution
+from distribution import parse_distribution
 
 __author__ = 'TimeWz667'
 __all__ = ['LinearCombination', 'Regression', 'LinearRegression']

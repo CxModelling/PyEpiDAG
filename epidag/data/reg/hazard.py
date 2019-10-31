@@ -3,7 +3,7 @@ import numpy.random as rd
 from scipy.special import gamma
 from scipy.interpolate import interp1d
 from abc import ABCMeta, abstractmethod
-from epidag.bayesnet.distribution import AbsDistribution
+from distribution import AbsDistribution
 
 
 __all__ = ['Hazard', 'ExponentialHazard', 'WeibullHazard', 'EmpiricalHazard',

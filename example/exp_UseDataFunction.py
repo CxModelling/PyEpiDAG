@@ -13,7 +13,7 @@ reg = {
 }
 
 
-dag.add_data_fn('lm', dag.data.LinearRegression(reg))
+dag.add_data_func('lm', dag.data.LinearRegression(reg))
 
 
 script = '''

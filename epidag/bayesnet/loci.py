@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 import re
 from epidag.util import MATH_FUNC, parse_math_expression, parse_function, ScriptException
 from epidag.data.fn import find_data_sampler
-from epidag.bayesnet.distribution import parse_distribution
+from distribution import parse_distribution
 
 __author__ = 'TimeWz667'
 __all__ = ['ValueLoci', 'ExoValueLoci', 'DistributionLoci', 'FunctionLoci', 'PseudoLoci',

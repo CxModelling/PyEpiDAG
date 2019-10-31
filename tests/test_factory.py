@@ -1,7 +1,7 @@
 import unittest
 import epidag as dag
 import epidag.factory as fac
-import epidag.bayesnet.distribution as dist
+import distribution as dist
 
 
 class TestParseFunction(unittest.TestCase):

@@ -17,6 +17,10 @@ def ifelse(cond, a, b):
     return a if cond else b
 
 
+def step(key, cut, a, b):
+    return a if key < cut else b
+
+
 MATH_FUNC = {
     'hypot': np.hypot,
     'exp': np.exp,
@@ -32,11 +36,17 @@ MATH_FUNC = {
     'pow': math.pow,
     'logit': sp.logit,
     'expit': sp.expit,
-    'ifelse': ifelse
+    'ifelse': ifelse,
+    'step': step
 }
 
 
 def add_math_func(fn_name, fn):
+    """
+    Add a customised data function
+    :param fn_name: name of the function
+    :param fn: a callable function
+    """
     if callable(fn):
         MATH_FUNC[fn_name] = fn
 
