@@ -1,5 +1,5 @@
 import unittest
-import epidag as dag
+import epidag.util as dag
 import epidag.factory as fac
 import distribution as dist
 

@@ -1,4 +1,5 @@
-from epidag.util import add_math_func
+from epidag.util import add_math_func, resample
+from epidag.distribution import parse_distribution
 from epidag.data.fn import add_data_func
 from epidag.bayesnet.fn import *
 from epidag.bayesnet import *

@@ -8,8 +8,7 @@ import epidag.factory.arguments as vld
 
 __author__ = 'TimeWz667'
 __all__ = ['AbsDistribution', 'SpDouble', 'SpInteger', 'DistributionCentre',
-           'parse_distribution',  # 'parse_distribution_function', 'execute_distribution',
-           'CategoricalRV']
+           'parse_distribution', 'CategoricalRV']
 
 
 class AbsDistribution(metaclass=ABCMeta):

@@ -5,7 +5,7 @@ __author__ = 'TimeWz667'
 __all__ = ['as_simulation_core', 'quick_build_parameter_core']
 
 
-def as_simulation_core(bn, ns: NodeSet):
+def as_simulation_core(bn, ns: NodeSet=None):
     """
     a blueprint of a simulation model based on given a Bayesian network.
     It describes every node in the network as 1) fixed variable, 2) random variable, 3) exposed distribution
@@ -13,6 +13,8 @@ def as_simulation_core(bn, ns: NodeSet):
     :param ns: name of root group
     :return: a simulation model
     """
+    if not ns:
+        ns = NodeSet('Root')
     ns.inject_bn(bn)
     return SimulationCore(bn, ns)
 

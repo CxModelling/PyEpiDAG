@@ -12,7 +12,6 @@ class ActorTest(unittest.TestCase):
         f1.update({'a': 3})
         self.assertEqual(3.0, f1.sample())
 
-
         f2 = FrozenSingleActor('B', FunctionLoci('B', 'b+4'), ['b'])
         f2.update({'b': 1})
         self.assertEqual(5.0, f2.sample())

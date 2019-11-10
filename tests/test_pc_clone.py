@@ -6,21 +6,19 @@ class ParameterCoreCloneTest(unittest.TestCase):
     def test_clone(self):
         script = '''
         PCore Regression {
-        x = 1
-        y = x + 1
-        z = y + 1
+            x = 1
+            y = x + 1
+            z = y + 1
         }
         '''
 
         bn = dag.bayes_net_from_script(script)
 
-        hei = {
-            'a': ['b', 'x'],
-            'b': ['c', 'y'],
-            'c': ['z']
-        }
+        na = dag.NodeSet('a')
+        nb = na.new_child('b', as_fixed=['x'])
+        nb.new_child('c', as_fixed=['z'])
 
-        sc = dag.as_simulation_core(bn, hei, out=[])
+        sc = dag.as_simulation_core(bn, na)
 
         pc_a = sc.generate('A')
         pc_b = pc_a.breed('B', 'b')

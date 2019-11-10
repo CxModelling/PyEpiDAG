@@ -1,9 +1,11 @@
-import epidag as dag
-from epidag.bayesnet.loci import *
-from epidag.bayesnet.dag import DAG
 import re
 import networkx as nx
 from networkx.drawing.nx_agraph import graphviz_layout
+import epidag as dag
+from epidag.util import ScriptException
+from epidag.bayesnet.loci import *
+from epidag.bayesnet.dag import DAG
+
 
 __author__ = 'TimeWz667'
 __all__ = ['BayesianNetwork', 'bayes_net_from_json', 'bayes_net_from_script']
@@ -98,7 +100,7 @@ class BayesianNetwork:
     def append_from_definition(self, df):
         try:
             loci, des = parse_loci(df)
-        except dag.ScriptException as e:
+        except ScriptException as e:
             raise e
         if des:
             self.append_loci(loci, Des=des)
@@ -283,11 +285,11 @@ def bayes_net_from_script(script):
             bn = BayesianNetwork(mat.group(1))
             break
     else:
-        raise dag.ScriptException('Unknown script format')
+        raise ScriptException('Unknown script format')
     for line in lines:
         try:
             bn.append_from_definition(line)
-        except dag.ScriptException:
+        except ScriptException:
             continue
     bn.complete()
     bn.script = script

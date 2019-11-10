@@ -77,11 +77,10 @@ class SimulationGroup:
         prior = 0
         for d in self.Fixed:
             loci = self.BN[d]
-            if d in shocked:
-                try:
-                    pc.Locus[d] = imp[d]
-                except KeyError:
-                    loci.fill(pc)
+            if d in imp:
+                pc.Locus[d] = imp[d]
+            elif d in shocked:
+                loci.fill(pc)
             prior += loci.evaluate(pc)
 
         pc.LogPrior = prior
