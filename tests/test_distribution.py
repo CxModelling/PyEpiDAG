@@ -98,7 +98,7 @@ class CategoricalRVCase(unittest.TestCase):
     def test_def(self):
         cat = parse_distribution('cat({"Y": 50, "M": 450,"O": 500})')
         js = cat.to_json()
-        self.assertDictEqual(js['Args']['kv'], {"Y": 50, "M": 450,"O": 500})
+        self.assertDictEqual(js['Args']['kv'], {"Y": 50, "M": 450, "O": 500})
         self.assertListEqual(list(cat.p), [0.05, 0.45, 0.5])
 
     def test_sample(self):

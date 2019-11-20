@@ -1,4 +1,6 @@
 import unittest
+import numpy as np
+from scipy.special import logsumexp
 from epidag.util import *
 
 
@@ -32,6 +34,23 @@ class FunctionParserCase(unittest.TestCase):
     def test_order(self):
         self.assertListEqual(self.fn.to_json()['Args'], ['(4 * a)', 'k', 'k', 5, False])
 
+
+class FunctionCase(unittest.TestCase):
+    def test_ifelse(self):
+        func = parse_math_expression('ifelse(y < 10, 0, 100)')
+        self.assertEqual(func({'y': 5}), 0)
+        self.assertEqual(func({'y': 15}), 100)
+
+    def test_step(self):
+        func = parse_math_expression('step(y, 10, 0, 100)')
+        self.assertEqual(func({'y': 5}), 0)
+        self.assertEqual(func({'y': 15}), 100)
+
+
+class ResampleCase(unittest.TestCase):
+    def test_resample(self):
+        inv, mu = resample([0, -1.2, -1], ['a', 'b', 'c'])
+        self.assertAlmostEqual(mu, logsumexp([0, -1.2, -1]) - np.log(3))
 
 if __name__ == '__main__':
     unittest.main()
