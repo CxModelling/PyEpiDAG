@@ -1,7 +1,7 @@
 import numpy.random as rd
-from .fitter import FrequentistFitter
-from .genetic import *
-from epidag import resample
+from epidag.fitting.alg.fitter import FrequentistFitter
+from epidag.fitting.alg.genetic import *
+from epidag.util import resample
 
 
 class GA(FrequentistFitter):

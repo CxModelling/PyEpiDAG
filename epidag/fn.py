@@ -1,7 +1,8 @@
-import epidag as dag
+import numpy as np
+from epidag.bayesnet import BayesianNetwork, get_sufficient_nodes
 
 __author__ = 'TimeWz667'
-__all__ = ['sample', 'sample_minimally']
+__all__ = ['sample', 'sample_minimally', 'evaluate_nodes']
 
 
 def sample(bn, cond=None):
@@ -38,7 +39,7 @@ def sample_minimally(bn, included, cond=None, sources=True):
     cond = cond if cond else dict()
     given = list(cond.keys())
 
-    suf = dag.get_sufficient_nodes(g, included, given)
+    suf = get_sufficient_nodes(g, included, given)
     suf_exo = [nod for nod in bn.Exo if nod in suf]
 
     for nod in suf_exo:
@@ -56,6 +57,19 @@ def sample_minimally(bn, included, cond=None, sources=True):
         return sinks, med
     else:
         return sinks
+
+
+def evaluate_nodes(bn, pars):
+    """
+    Evaluate the likelihood of a set of variables
+    :param bn: BayesianNetwork, a Bayesian Network
+    :type bn: BayesianNetwork
+    :param pars: dict, a container of parameters
+    :return: the log likelihood of pars
+    """
+    nodes = bn.DAG.nodes
+    lps = np.sum([nodes[k]['loci'].evaluate(pars) for k in pars.keys()])
+    return lps
 
 
 def as_causal_diagram(bn):

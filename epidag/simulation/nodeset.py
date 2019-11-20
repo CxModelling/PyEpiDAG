@@ -67,7 +67,6 @@ class NodeSet:
         self.ChildrenSamplers = None
         self.__frozen = False
 
-
     def add_child(self, ns):
         assert not self.__frozen
         self.__children[ns.Name] = ns

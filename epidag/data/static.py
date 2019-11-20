@@ -1,6 +1,6 @@
 import pandas as pd
-from distribution import CategoricalRV
-from .frame import AbsDataSet
+from epidag.distribution import CategoricalRV
+from epidag.data.frame import AbsDataSet
 
 __author__ = 'TimeWz667'
 __all__ = ['TransitionMatrix', 'ConditionalProbabilityTable']

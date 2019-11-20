@@ -27,8 +27,3 @@ class AbsDataFunction(metaclass=ABCMeta):
         js['Type'] = self.Type
         js['Selectors'] = list(self.Selectors)
         js['RawData'] = self.RawData
-
-
-
-
-

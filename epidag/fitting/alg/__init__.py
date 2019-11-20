@@ -1,7 +1,7 @@
-from .mcmc import MCMC
-from .sir import SIR
-from .abc import ABC
-from .ga import GA
-from .fitter import Fitter, BayesianFitter, FrequentistFitter
+from epidag.fitting.alg.mcmc import MCMC
+from epidag.fitting.alg.sir import SIR
+from epidag.fitting.alg.abc import ABC
+from epidag.fitting.alg.ga import GA
+from epidag.fitting.alg.fitter import Fitter, BayesianFitter, FrequentistFitter
 
 __author__ = 'TimeWz667'

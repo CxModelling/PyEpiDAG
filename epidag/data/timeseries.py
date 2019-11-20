@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.interpolate import interp1d
-from .frame import AbsDataSet
-from distribution import CategoricalRV
+from epidag.data.frame import AbsDataSet
+from epidag.distribution import CategoricalRV
 
 __author__ = 'TimeWz667'
 __all__ = ['TimeSeries', 'TimeSeriesVector', 'TimeSeriesProbabilityTable', 'LeeCarter']

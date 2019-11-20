@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from distribution import parse_distribution
+from epidag.distribution import parse_distribution
 
 __author__ = 'TimeWz667'
 __all__ = ['LinearCombination', 'Regression', 'LinearRegression']
@@ -123,8 +123,9 @@ class LinearRegression(Regression):
     def expectation(self, xs):
         return self.LC.predict(xs) + self.Intercept
 
-    def predict(self, xs):
-        return self.get_sampler(xs).sample(1)
+    def predict(self, xs, n=1):
+        n = max(n, 1)
+        return self.get_sampler(xs).sample(n)
 
     def get_sampler(self, xs):
         return parse_distribution('norm(mu, err)', {'mu': self.expectation(xs), 'err': self.Error})

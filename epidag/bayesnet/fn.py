@@ -1,55 +1,13 @@
 import networkx as nx
-from epidag.bayesnet.loci import ValueLoci, ExoValueLoci
 import numpy as np
+from epidag.bayesnet.loci import ValueLoci, ExoValueLoci
+
 
 __author__ = 'TimeWz667'
-__all__ = [# 'NodeGroup',
-           'get_sufficient_nodes', 'get_minimal_nodes', 'get_offsprings',
-           # 'form_hierarchy', 'formulate_blueprint',
-           # 'analyse_node_type',
-           'evaluate_nodes']
+__all__ = []
 
 
-def get_sufficient_nodes(g, included, given=None):
-    """
-    Find the required nodes to assess the included nodes
-    :param g: a directed acyclic graph
-    :param included: targeted nodes
-    :param given: certain nodes
-    :return: a set of the required nodes
-    """
-    mi = g.copy()
-    given = given if given else dict()
-    # remove all parents from the given nodes
-    for nod in given:
-        pas = list(mi.predecessors(nod))
-        for pa in pas:
-            mi.remove_edge(pa, nod)
-    # find the nodes supporting the included nodes
-    return set.union(*[nx.ancestors(mi, nod) for nod in included]).union(included)
 
-
-def get_minimal_nodes(g, included, given=None):
-    """
-    Find the required nodes to assess the included nodes without given nodes
-    :param g: a directed acyclic graph
-    :param included: targeted nodes
-    :param given: certain nodes
-    :return: a set of the required nodes
-    """
-    suf = get_sufficient_nodes(g, included=included, given=given)
-    suf.difference_update(given)
-    return suf
-
-
-def get_offsprings(g, nodes):
-    """
-    Find the offspring nodes in a DAG
-    :param g: a directed acyclic graph
-    :param nodes: targeted nodes
-    :return: a set of offspring nodes
-    """
-    return set.union(*[g.descendants(d) for d in nodes])
 
 
 class NodeGroup:
@@ -340,15 +298,3 @@ def formulate_blueprint(bn, root=None, random=None, out=None):
 
         approved[k] = aes, afs, ars, acs
     return approved
-
-
-def evaluate_nodes(bn, pars):
-    """
-    Evaluate the likelihood of a set of variables
-    :param bn: epidag.BayesNet, a Bayesian Network
-    :param pars: dict, a container of parameters
-    :return: the log likelihood of pars
-    """
-    nodes = bn.DAG.nodes
-    lps = np.sum([nodes[k]['loci'].evaluate(pars) for k in pars.keys()])
-    return lps

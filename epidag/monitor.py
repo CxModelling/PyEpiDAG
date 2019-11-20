@@ -1,13 +1,15 @@
-from logging import getLogger, FileHandler
+from logging import getLogger, FileHandler, StreamHandler
 import pandas as pd
 
 __author__ = 'TimeWz667'
+__all__ = ['Monitor']
 
 
 class Monitor:
     def __init__(self, name):
         self.Title = name
         self.Logger = getLogger(name)
+        self.Logger.addHandler(StreamHandler())
         self.Records = []
         self.Time = 0
         self.Last = {"Time": self.Time}
