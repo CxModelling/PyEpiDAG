@@ -1,5 +1,5 @@
 import unittest
-import epidag as dag
+import epidag.bayesnet.dag as dag
 
 
 class DAGTest(unittest.TestCase):
@@ -14,7 +14,6 @@ class DAGTest(unittest.TestCase):
         self.Sub.add_edge('E', 'D')
 
         self.G.nodes['A']['loci'] = [1, 2, 3]
-
 
     def test_relations(self):
         self.assertCountEqual(self.G.parents('D'), ['B', 'C'])
@@ -37,7 +36,6 @@ class DAGTest(unittest.TestCase):
         self.assertCountEqual(dag.minimal_requirements(self.G, 'B', []), ['A'])
         self.assertCountEqual(dag.minimal_requirements(self.G, 'D', []), ['A', 'B', 'C'])
         self.assertCountEqual(dag.minimal_requirements(self.G, 'D', ['B']), ['B', 'C'])
-
 
 
 if __name__ == '__main__':

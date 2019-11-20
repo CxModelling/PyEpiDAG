@@ -25,7 +25,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 class FittingTest(unittest.TestCase):
     def setUp(self):
         self.BN = dag.bayes_net_from_script(scr)
-        self.DM = dag.dag.as_data_model(self.BN, data)
+        self.DM = dag.as_data_model(self.BN, data)
         self.Logger = logging.getLogger(__name__)
 
     def test_sir(self):

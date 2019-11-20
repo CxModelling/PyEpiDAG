@@ -156,7 +156,7 @@ if __name__ == '__main__':
 
     print(lm)
     print(lm.expectation(case1))
-    print(lm.predict(case1))
+    print(lm.predict(case1, 1000).mean())
 
     sampler = lm.get_sampler(case1)
     print(sampler)

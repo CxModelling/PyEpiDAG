@@ -18,12 +18,12 @@ class ActorBlueprint:
 
     def compose_actor(self, bn):
         if self.Type is ActorBlueprint.Frozen:
-            return  act.FrozenSingleActor(self.Name, bn[self.Name], self.ToRead)
+            return act.FrozenSingleActor(self.Name, bn[self.Name], self.ToRead)
         elif self.Type is ActorBlueprint.Single:
-            return  act.SingleActor(self.Name, bn[self.Name], self.ToRead)
+            return act.SingleActor(self.Name, bn[self.Name], self.ToRead)
         else:
             to_sample = [bn[d] for d in self.ToSample]
-            return  act.CompoundActor(self.Name, bn[self.Name], self.ToRead, to_sample)
+            return act.CompoundActor(self.Name, bn[self.Name], self.ToRead, to_sample)
 
     def __str__(self):
         st = '{}: {}'.format(self.Type, self.Name)
@@ -271,7 +271,7 @@ class NodeSet:
 if __name__ == '__main__':
     from epidag.bayesnet.bn import bayes_net_from_script
 
-    bn = bayes_net_from_script('''
+    bn1 = bayes_net_from_script('''
     PCore Test {
         a = 1
         b = a + 3
@@ -286,6 +286,6 @@ if __name__ == '__main__':
     ns = nr.new_child('med', as_fixed=['b'], as_floating=['d'])
     ne = ns.new_child('leaf', as_fixed=['e'])
 
-    nr.inject_bn(bn)
+    nr.inject_bn(bn1)
 
     nr.print()

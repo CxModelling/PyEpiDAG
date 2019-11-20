@@ -1,9 +1,9 @@
-from abc import ABCMeta, abstractmethod, ABC
+from abc import ABCMeta, abstractmethod
 import logging
 from collections import OrderedDict
 import pandas as pd
-from ..misc import dic, ess
-from epidag import Chromosome
+from epidag.fitting.misc import dic, ess
+from epidag.bayesnet import Chromosome
 
 __author__ = 'TimeWz667'
 
