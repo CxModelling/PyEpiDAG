@@ -265,7 +265,7 @@ DistributionCentre.register('exp', d_exp, [vld.PositiveFloat('rate', default=1.0
 
 
 def d_lnorm(meanlog, sdlog):
-    return SpDouble(sts.lognorm(s=meanlog, scale=np.exp(sdlog)))
+    return SpDouble(sts.lognorm(s=np.exp(sdlog), scale=np.exp(np.exp(meanlog))))
 
 
 DistributionCentre.register('lnorm', d_lnorm, [vld.PositiveFloat('meanlog', default=0),
@@ -299,7 +299,7 @@ def d_invgamma(a, rate):
     return SpDouble(sts.invgamma(a=a, scale=1/rate))
 
 
-DistributionCentre.register('invgamma', d_invgamma, [vld.PositiveFloat('a', default=1.0),
+DistributionCentre.register('invgamma', d_invgamma, [vld.Float('a', default=5.0, lower=2),
                                                      vld.PositiveFloat('rate', default=1.0)])
 
 

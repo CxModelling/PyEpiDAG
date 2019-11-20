@@ -165,5 +165,5 @@ class GA(FrequentistFitter):
     def summarise_fitness(self):
         print('Model:', self.Model)
         print('Target:', self.Target)
-        print('Best fit', self.BestFit)
+        print('Best fitting', self.BestFit)
         print('Max fitness', self.MaxFitness)
