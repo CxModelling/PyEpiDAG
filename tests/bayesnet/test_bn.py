@@ -23,6 +23,8 @@ class BayesNetTest(unittest.TestCase):
     def test_merge(self):
         bn3 = self.BN1.merge('B3', self.BN2)
         self.assertNotIn('B2', bn3)
+        self.assertCountEqual(self.BN1.DAG.ancestors('D'), ['A', 'B', 'B2', 'C'])
+        self.assertCountEqual(self.BN2.DAG.ancestors('D'), ['B', 'C'])
         self.assertCountEqual(bn3.DAG.ancestors('D'), ['A', 'B', 'C'])
 
 
