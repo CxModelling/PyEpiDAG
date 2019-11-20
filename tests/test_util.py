@@ -52,5 +52,6 @@ class ResampleCase(unittest.TestCase):
         inv, mu = resample([0, -1.2, -1], ['a', 'b', 'c'])
         self.assertAlmostEqual(mu, logsumexp([0, -1.2, -1]) - np.log(3))
 
+
 if __name__ == '__main__':
     unittest.main()
