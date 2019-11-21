@@ -3,19 +3,26 @@ import epidag as dag
 
 __author__ = 'TimeWz667'
 
-scr = '''
-    Pcore A{
-        w = 1
-        x1 = 1/x + exp(5)
-        v ~ norm(z, sd)
-        x = 0.2
-        y ~ exp(x1)
-        z ~ norm(w, y)
-    }
-    '''
 
-bn = dag.bayes_net_from_script(scr)
+script = '''
+PCore BetaBin {
+    al = 1
+    be = 1
+    p ~ beta(al, be)
+    x ~ binom(5, p)
+}
+'''
 
-print(bn)
 
-print(dag.sample(bn, {'sd': 1}))
+bn = dag.bayes_net_from_script(script)
+
+ns = dag.NodeSet('root', as_fixed=['al', 'be'])
+ns.new_child('ag', as_floating=['x'])
+
+sc = dag.as_simulation_core(bn, ns)
+sc.deep_print()
+
+pc = sc.generate('a')
+p = pc.breed('x', 'ag')
+
+print(p.get_sampler('p'))

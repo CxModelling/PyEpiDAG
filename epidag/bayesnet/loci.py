@@ -1,7 +1,6 @@
 from abc import ABCMeta, abstractmethod
 import re
-from epidag.util import MATH_FUNC, parse_math_expression, parse_function, ScriptException
-from epidag.data.fn import find_data_sampler
+from epidag.util import *
 from epidag.distribution import parse_distribution
 
 __author__ = 'TimeWz667'

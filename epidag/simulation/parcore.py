@@ -1,4 +1,4 @@
-from epidag.bayesnet import Chromosome, get_offsprings
+from epidag.bayesnet import Chromosome
 from epidag.simulation.actor import FrozenSingleActor, Sampler, CompoundActor
 
 
@@ -163,13 +163,13 @@ class ParameterCore(Chromosome):
         except AttributeError:
             g = bn.DAG
         if isinstance(imp, dict):
-            shocked = get_offsprings(g, imp.keys())
+            shocked = g.downstream(imp.keys())
             non_imp = [k for k, v in imp.items() if v is None]
             imp = {k: v for k, v in imp.items() if v is not None}
             shocked.difference_update(imp.keys())
             shocked = shocked.union(non_imp)
         elif isinstance(imp, list):
-            shocked = get_offsprings(g, imp)
+            shocked = g.downstream(imp)
             shocked = shocked.union(imp)
             imp = dict()
         else:
@@ -353,10 +353,11 @@ class PseudoParameterCore(ParameterCore):
         """
         return list()
 
-    def get_sampler(self, sampler):
+    def get_sampler(self, sampler, shared=True):
         """
         Get a sampler of a specific variable
         :param sampler: name of the target sampler
+        :param shared: include shared samplers or not
         :return:
         """
         raise KeyError('No sampler in pseudo parameters')
@@ -395,6 +396,7 @@ class PseudoParameterCore(ParameterCore):
         """
         Do interventions
         :param imp: dict(node: value) or list(node), intervention
+        :param bn: a bayesian network
         """
         return
 
@@ -402,7 +404,7 @@ class PseudoParameterCore(ParameterCore):
         exo = exo if exo else dict()
         for k, s in self.get_samplers().items():
             if isinstance(s, CompoundActor):
-                self.Locus.update(s.sample_with_mediators(self.Locus, **exo))
+                self.Locus.update(s.sample_with_mediators(self.Locus))
             else:
                 self.Locus[k] = s.render(self.Locus, **exo)
 

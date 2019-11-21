@@ -63,8 +63,8 @@ class NodeSet:
 
         self.__was_fixed = None
         self.__will_be_floating = None
-        self.Samplers = None
-        self.ChildrenSamplers = None
+        self.LocalSamplers = dict()
+        self.SharedSamplers = dict()
         self.__frozen = False
 
     def add_child(self, ns):
@@ -83,20 +83,19 @@ class NodeSet:
 
     @property
     def Parent(self):
-        return self.Parent
+        return self.__parent
 
     def inject_bn(self, bn):
-        '''
+        """
         Allocate the nodes according to the DAG in bn
         :param bn: A well-defined BayesNet
         :return:
-        '''
+        """
         assert not self.__frozen
         assert self._validate_initial_conditions(bn)
 
         self._resolve_local_nodes(bn)
-
-        self._pass_down_fixed()
+        # self._pass_down_fixed()
         self._raise_up_floating()
         self._resolve_relations(bn)
         self._define_sampler_blueprints(bn)
@@ -109,9 +108,10 @@ class NodeSet:
                 return False
 
         g = bn.DAG
-        anc = set()
-        for d in self.__as_fixed:
-            anc.update(g.ancestors(d))
+        if not self.__as_fixed:
+            return True
+
+        anc = g.upstream(self.__as_fixed)
 
         for d in self.__as_floating:
             if d in self.__as_fixed:
@@ -121,7 +121,11 @@ class NodeSet:
         else:
             return True
 
-    def _resolve_local_nodes(self, bn):
+    def _resolve_local_nodes(self, bn, fixed=None):
+        """
+        Identify mediators and find requirements
+        :param bn: source bayesian network
+        """
         g = bn.DAG
         mini = dag.minimal_dag(g, set.union(self.__as_fixed, self.__as_floating)).order()
 
@@ -133,21 +137,37 @@ class NodeSet:
         self.FloatingNodes = set(self.__as_floating)
         self.FixedNodes = set(self.__as_fixed)
 
+        # pass down fixed
+        if self.__parent:
+            self.__was_fixed = fixed if fixed else set()
+        else:
+            self.__was_fixed = set()
+        all_fixed = set.union(self.__was_fixed, self.FixedNodes)
+
         for d in med:
-            if bn.has_randomness(d, self.__as_fixed):
+            if bn.has_randomness(d, all_fixed):
                 self.FloatingNodes.add(d)
             else:
                 self.FixedNodes.add(d)
+                all_fixed.add(d)
 
         for d in bn.sort(self.FloatingNodes):
-            if not bn.has_randomness(d, self.FixedNodes):
+            if not bn.has_randomness(d, all_fixed):
                 self.FixedNodes.add(d)
                 self.FloatingNodes.remove(d)
+                all_fixed.add(d)
 
+        if not self.__parent:
+            for d in bn.Roots:
+                if not bn.has_randomness(d):
+                    self.FixedNodes.add(d)
+                    all_fixed.add(d)
 
         rqs = dict()
-        self.ListeningNodes = set()  # requirements for floating nodes (giving values when needed)
-        self.ExoNodes = set()  # requirements for fixed nodes (giving values at initialisation)
+        # requirements for floating nodes (giving values when needed)
+        self.ListeningNodes = set()
+        # requirements for fixed nodes (giving values at initialisation)
+        self.ExoNodes = set()
 
         for i, node in enumerate(mini):
             par = mini[:i]
@@ -159,11 +179,10 @@ class NodeSet:
                 self.ExoNodes.update(rq)
             rqs[node] = rq
         self.ListeningNodes.difference_update(mini)
-        # lis.difference_update(Fixed)
         self.ExoNodes.difference_update(self.FixedNodes)
 
         for ch in self.__children.values():
-            ch._resolve_local_nodes(bn)
+            ch._resolve_local_nodes(bn, all_fixed)
 
     def _pass_down_fixed(self, fixed=None):
         if self.__parent:
@@ -195,16 +214,24 @@ class NodeSet:
         self.ExoNodes.difference_update(to_shift)
         self.FixedNodes.update(to_shift)
 
-        for d in to_hoist:
-            self.__parent._hoist_node(d)
+        if self.__parent:
+            for d in to_hoist:
+                self.__parent._hoist_node(d)
+        else:
+            self.FixedNodes.update(to_hoist)
+            self.ExoNodes.difference_update(to_hoist)
 
-
+        given = set.union(self.FixedNodes, self.ExoNodes, self.__was_fixed)
         to_shift = [d for d in self.ListeningNodes if d not in self.__was_fixed]
         to_shift = [d for d in to_shift if not bn.is_exogenous(d)]
-        to_shift = [d for d in to_shift if bn.is_deterministic(d, self.__was_fixed)]
-        self.ListeningNodes.difference_update(to_shift)
-        self.FixedNodes.update(to_shift)
+        for d in to_shift:
+            if bn.has_randomness(d, given):
+                self.FloatingNodes.add(d)
+            else:
+                self.FixedNodes.add(d)
 
+        self.ListeningNodes.difference_update(self.FixedNodes)
+        self.ListeningNodes.difference_update(self.FloatingNodes)
 
         for ch in self.__children.values():
             ch._resolve_relations(bn)
@@ -223,7 +250,7 @@ class NodeSet:
             loci = bn[d]
             pars = set(loci.Parents)
 
-            if pars <= af: # if all parent nodes had been fixed before
+            if pars <= af:  # if all parent nodes had been fixed before
                 self.LocalSamplers[d] = ActorBlueprint(d, ActorBlueprint.Frozen, pars, None)
                 if set.intersection(pars, self.FixedNodes):
 
@@ -255,7 +282,7 @@ class NodeSet:
             ch.print_samplers(i + 2)
 
     def has_floating_blueprint(self, node):
-        return node in self.Samplers
+        return node in self.LocalSamplers
 
     def print(self, i=0):
         ind = i * ' '
@@ -269,7 +296,7 @@ class NodeSet:
 
 
 if __name__ == '__main__':
-    from epidag.bayesnet.bn import bayes_net_from_script
+    from epidag import bayes_net_from_script
 
     bn1 = bayes_net_from_script('''
     PCore Test {
@@ -279,13 +306,12 @@ if __name__ == '__main__':
         d ~ binom(b, 0. 5)
         e = d + c
     }
-    '''
-    )
+    ''')
 
-    nr = NodeSet('root', as_fixed=['a'])
-    ns = nr.new_child('med', as_fixed=['b'], as_floating=['d'])
-    ne = ns.new_child('leaf', as_fixed=['e'])
+    ndr = NodeSet('root', as_fixed=['a'])
+    nds = ndr.new_child('med', as_fixed=['b'], as_floating=['d'])
+    nde = nds.new_child('leaf', as_fixed=['e'])
 
-    nr.inject_bn(bn1)
+    ndr.inject_bn(bn1)
 
-    nr.print()
+    ndr.print()

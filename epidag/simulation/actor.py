@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from epidag.bayesnet.loci import DistributionLoci
+from epidag.bayesnet.loci import *
 
 __author__ = 'TimeWz667'
 __all__ = ['FrozenSingleActor', 'SingleActor', 'CompoundActor', 'Sampler']
@@ -11,14 +11,13 @@ class SimulationActor(metaclass=ABCMeta):
         self.Loci = loci
         self.ToRead = to_read
 
-
     @abstractmethod
     def sample(self, pas=None):
         pass
 
     def read_upstream(self, pas=None):
         up = dict()
-        if self.ToRead and pas:
+        if self.ToRead and pas is not None:
             for p in self.ToRead:
                 try:
                     up[p] = pas[p]
@@ -79,7 +78,7 @@ class CompoundActor(SimulationActor):
             pas[loc.Name] = loc.render(pas)
         return self.Loci.render(pas)
 
-    def sample_with_mediators(self, pas=None, **kwargs):
+    def sample_with_mediators(self, pas=None):
         pas = self.read_upstream(pas)
 
         res = dict()
@@ -99,11 +98,10 @@ class CompoundActor(SimulationActor):
 
 
 class Sampler:
-    def __init__(self, act: SimulationActor, chr):
+    def __init__(self, act: SimulationActor, cms):
         self.Actor = act
-        self.Chromosome = chr
-        if isinstance(self.Actor, FrozenSingleActor):
-            self.update(self.Chromosome)
+        self.Chromosome = None
+        self.update(cms)
 
     def __call__(self):
         """
@@ -112,9 +110,9 @@ class Sampler:
         """
         return self.Actor.sample(self.Chromosome)
 
-    def update(self, chr=None):
-        if chr:
-            self.Chromosome = chr
+    def update(self, cms=None):
+        if cms is not None:
+            self.Chromosome = cms
 
         if isinstance(self.Actor, FrozenSingleActor):
             self.Actor.update(self.Chromosome)
@@ -130,62 +128,8 @@ class Sampler:
             return self()
         return [self() for _ in range(n)]
 
-    def __repr__(self):
+    def __str__(self):
         return 'Actor {} on {}'.format(repr(self.Actor), self.Chromosome.Nickname)
 
-    __str__ = __repr__
-
-
-if __name__ == '__main__':
-    from epidag.bayesnet.loci import *
-
-    f1 = FrozenSingleActor('A', DistributionLoci('A', 'k(a)'),  ['a'])
-    f1.update({'a': 1})
-    print(f1.sample())
-
-    f1.update({'a': 3})
-    print(f1.sample())
-
-    f2 = FrozenSingleActor('B', FunctionLoci('B', 'b+4'), ['b'])
-    f2.update({'b': 1})
-    print(f2.sample())
-
-    f2.update({'b': 3})
-    print(f2.sample())
-
-    print(f2.Sampler)
-
-    s1 = SingleActor('C', DistributionLoci('C', 'k(c)'), ['c'])
-    try:
-        print(s1.sample())
-    except KeyError:
-        print('error')
-
-    print(s1)
-    print(s1.sample({'c': 3}))
-
-
-    c1 = CompoundActor('D', DistributionLoci('D', 'k(d)'),
-                       ['b'],
-                       [
-                           DistributionLoci('a', 'k(1)'),
-                           FunctionLoci('c', 'a+b'),
-                           FunctionLoci('d', 'c+1')
-                       ])
-    print(c1)
-    print(c1.sample({'b': 4}))
-
-    c2 = CompoundActor('D', FunctionLoci('D', 'pow(d, 2)'),
-                       ['b'],
-                       [
-                           DistributionLoci('a', 'k(1)'),
-                           FunctionLoci('c', 'a+b'),
-                           FunctionLoci('d', 'c+1')
-                       ])
-    print(c2)
-    print(c2.sample({'b': 4}))
-
-
-    sam1 = Sampler(c2, {'b': 4})
-    print(sam1.sample())
-    print(sam1.sample(3))
+    def __repr__(self):
+        return 'Actor( {} on {})'.format(repr(self.Actor), self.Chromosome.Nickname)

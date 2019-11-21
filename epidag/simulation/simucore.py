@@ -1,7 +1,6 @@
 from epidag.simulation.simugroup import SimulationGroup
 from epidag.simulation.nodeset import NodeSet
-from epidag.bayesnet import BayesianNetwork
-from copy import deepcopy
+
 __author__ = 'TimeWz667'
 
 __all__ = ['SimulationCore']
@@ -61,7 +60,7 @@ class SimulationCore:
         self.RootNode.print()
 
     def clone(self):
-        return SimulationCore(self.BN,self.RootNode)
+        return SimulationCore(self.BN, self.RootNode)
 
     def __repr__(self):
         return 'Simulation core: {}'.format(self.Name)

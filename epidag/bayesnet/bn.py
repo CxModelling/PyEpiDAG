@@ -1,10 +1,9 @@
 import re
 import networkx as nx
 from networkx.drawing.nx_agraph import graphviz_layout
-import epidag as dag
 from epidag.util import ScriptException
 from epidag.bayesnet.loci import *
-from epidag.bayesnet.dag import DAG
+from epidag.bayesnet.dag import DAG, minimal_requirements
 
 
 __author__ = 'TimeWz667'
@@ -187,7 +186,7 @@ class BayesianNetwork:
         if isinstance(self[node], ValueLoci):
             return True
         if given:
-            req = dag.minimal_requirements(self.DAG, node, given)
+            req = minimal_requirements(self.DAG, node, given)
             req = [d for d in req if d not in given]
             return all(isinstance(self[d], ValueLoci) for d in req)
         else:
@@ -197,7 +196,7 @@ class BayesianNetwork:
         if self.is_rv(node):
             return True
         if given:
-            req = dag.minimal_requirements(self.DAG, node, given)
+            req = minimal_requirements(self.DAG, node, given)
             req = [d for d in req if d not in given]
         else:
             req = self.DAG.ancestors(node)

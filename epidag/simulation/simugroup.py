@@ -33,7 +33,10 @@ class SimulationGroup:
         vs = dict(exo)
         for d in self.Exogenous:
             if d not in vs:
-                vs[d] = parent[d]
+                try:
+                    vs[d] = parent[d]
+                except (TypeError, KeyError):
+                    vs[d] = self.BN[d].fill(vs)
 
         prior = 0
         for d in self.Fixed:
