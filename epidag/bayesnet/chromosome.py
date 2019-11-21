@@ -16,6 +16,9 @@ class Chromosome:
     def __iter__(self):
         return iter(self.Locus.items())
 
+    def __bool__(self):
+        return True
+
     def __getitem__(self, item):
         return self.Locus[item]
 

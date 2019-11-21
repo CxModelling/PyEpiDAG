@@ -43,5 +43,3 @@ print('\nCreate objects from function syntax')
 print(manager.parse('A(5, 0.3)'))
 print(manager.parse('A(n=5, p=0.3)'))
 print(manager.parse('A(n=5, p=0.3*x)', {'x': 0.2}))
-
-

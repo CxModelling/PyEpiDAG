@@ -1,4 +1,4 @@
-from epidag.bayesnet import parse_distribution
+from epidag import parse_distribution
 from collections import Counter
 
 __author__ = 'TimeWz667'

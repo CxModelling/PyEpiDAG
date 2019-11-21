@@ -14,7 +14,7 @@ def as_simulation_core(bn, ns: NodeSet=None):
     :return: a simulation model
     """
     if not ns:
-        ns = NodeSet('Root')
+        ns = NodeSet('Root', as_floating=bn.DAG.leaves())
     ns.inject_bn(bn)
     return SimulationCore(bn, ns)
 

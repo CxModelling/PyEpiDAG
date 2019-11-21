@@ -95,7 +95,6 @@ class NodeSet:
         assert self._validate_initial_conditions(bn)
 
         self._resolve_local_nodes(bn)
-        # self._pass_down_fixed()
         self._raise_up_floating()
         self._resolve_relations(bn)
         self._define_sampler_blueprints(bn)
@@ -183,15 +182,6 @@ class NodeSet:
 
         for ch in self.__children.values():
             ch._resolve_local_nodes(bn, all_fixed)
-
-    def _pass_down_fixed(self, fixed=None):
-        if self.__parent:
-            self.__was_fixed = fixed if fixed else set()
-        else:
-            self.__was_fixed = set()
-        all_fixed = set.union(self.__was_fixed, self.FixedNodes)
-        for ch in self.__children.values():
-            ch._pass_down_fixed(all_fixed)
 
     def _hoist_node(self, node):
         if node not in self.__was_fixed:
