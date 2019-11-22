@@ -16,7 +16,7 @@ PCore BetaBin {
 
 bn = dag.bayes_net_from_script(script)
 
-ns = dag.NodeSet('root', as_fixed=['al', 'be'])
+ns = dag.NodeSet('root', as_fixed=['al'], as_floating=['p'])
 ns.new_child('ag', as_floating=['x'])
 
 sc = dag.as_simulation_core(bn, ns)

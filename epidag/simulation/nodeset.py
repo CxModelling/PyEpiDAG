@@ -1,3 +1,4 @@
+from epidag.bayesnet import BayesianNetwork
 import epidag.bayesnet.dag as dag
 import epidag.simulation.actor as act
 
@@ -85,7 +86,7 @@ class NodeSet:
     def Parent(self):
         return self.__parent
 
-    def inject_bn(self, bn):
+    def inject_bn(self, bn: BayesianNetwork):
         """
         Allocate the nodes according to the DAG in bn
         :param bn: A well-defined BayesNet
@@ -97,6 +98,7 @@ class NodeSet:
         self._resolve_local_nodes(bn)
         self._raise_up_floating()
         self._resolve_relations(bn)
+        self._locate_undefined(bn)
         self._define_sampler_blueprints(bn)
         self._sort_fixed_nodes(bn)
         self.__frozen = True
@@ -225,6 +227,43 @@ class NodeSet:
 
         for ch in self.__children.values():
             ch._resolve_relations(bn)
+
+    def _claim_used_nodes(self):
+        nodes = set()
+        nodes.update(self.FixedNodes)
+        nodes.update(self.FloatingNodes)
+        for ch in self.__children.values():
+            nodes.update(ch._claim_used_nodes())
+        return nodes
+
+    def _pass_down_undefined(self, bn, fixed, floating, nodes):
+        to_pass_down = set()
+        gfi = set(self.FixedNodes)
+        gfi.update(fixed)
+
+        gfl = set(self.FloatingNodes)
+        gfl.update(floating)
+        gfl.update(gfi)
+
+        for node in nodes:
+            loc = bn[node]
+            ps = set(loc.Parents)
+            if ps <= gfi:
+                if bn.is_rv(node):
+                    self.FloatingNodes.add(node)
+                else:
+                    self.FixedNodes.add(node)
+            elif ps <= gfl:
+                self.FloatingNodes.add(node)
+            else:
+                to_pass_down.add(node)
+        for ch in self.__children.values():
+            ch._pass_down_undefined(bn, gfi, gfl, to_pass_down)
+
+    def _locate_undefined(self, bn):
+        used = self._claim_used_nodes()
+        undefined = [node for node in bn.Order if node not in used]
+        self._pass_down_undefined(bn, set(), set(), undefined)
 
     def _define_sampler_blueprints(self, bn):
         g = bn.DAG
