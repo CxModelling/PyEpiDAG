@@ -1,20 +1,19 @@
-import numpy.random as rd
-from epidag.fitting.alg.fitter import FrequentistFitter
+from epidag.fitting.alg.fitter import EvolutionaryFitter
 from epidag.fitting.alg.genetic import *
 from epidag.util import resample
 
 
-class GA(FrequentistFitter):
+class GA(EvolutionaryFitter):
     DefaultParameters = {
         'n_population': 100,
-        'n_cycle': 20,
+        'n_generation': 20,
         'p_mutation': 0.1,
         'p_crossover': 0.1,
         'target': 'MLE'
     }
 
     def __init__(self, model):
-        FrequentistFitter.__init__(self, model)
+        EvolutionaryFitter.__init__(self, model)
         self.Population = list()
         self.p_mutation = GA.DefaultParameters['p_mutation']
         self.p_crossover = GA.DefaultParameters['p_crossover']
@@ -117,7 +116,7 @@ class GA(FrequentistFitter):
 
         for i, s in enumerate(sel):
             if s:
-                p = pop[i]
+                p = pop[i] = pop[i].clone()
                 loc = dict()
                 for mut in self.Mutators:
                     loc[mut.Name] = mut.proposal(p[mut.Name])

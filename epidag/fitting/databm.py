@@ -1,6 +1,6 @@
 import epidag as dag
 import numpy as np
-from .bayesmodel import BayesianModel
+from epidag.fitting.bayesmodel import BayesianModel
 from scipy.special import logsumexp
 
 __author__ = 'TimeWz667'

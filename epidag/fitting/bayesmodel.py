@@ -1,5 +1,7 @@
 from abc import ABCMeta, abstractmethod
-import epidag as dag
+from epidag.bayesnet import Chromosome
+from epidag.fn import sample, evaluate_nodes
+
 __author__ = 'TimeWz667'
 __all__ = ['BayesianModel']
 
@@ -7,12 +9,13 @@ __all__ = ['BayesianModel']
 class BayesianModel(metaclass=ABCMeta):
     def __init__(self, bn):
         self.BN = bn
+        self.Name = bn.Name
 
     def sample_prior(self):
-        return dag.Chromosome(dag.sample(self.BN))
+        return Chromosome(sample(self.BN))
 
     def evaluate_prior(self, prior):
-        prior.LogPrior = dag.evaluate_nodes(self.BN, prior)
+        prior.LogPrior = evaluate_nodes(self.BN, prior)
         return prior.LogPrior
 
     def get_movable_nodes(self):

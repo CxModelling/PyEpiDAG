@@ -316,10 +316,14 @@ class NodeSet:
     def print(self, i=0):
         ind = i * ' '
         print('{}NodeSet {}'.format((i - 2) * ' ' + '|-' if i else '', self.Name))
-        print('{}|-Fixed {}'.format(ind, self.FixedNodes))
-        print('{}|-Floating {}'.format(ind, self.FloatingNodes))
-        print('{}|-Exo {}'.format(ind, self.ExoNodes))
-        print('{}|-Listening {}'.format(ind, self.ListeningNodes))
+        if self.FixedNodes:
+            print('{}|-Fixed {}'.format(ind, self.FixedNodes))
+        if self.FloatingNodes:
+            print('{}|-Floating {}'.format(ind, list(self.FloatingNodes)))
+        if self.ExoNodes:
+            print('{}|-Exo {}'.format(ind, list(self.ExoNodes)))
+        if self.ListeningNodes:
+            print('{}|-Listening {}'.format(ind, list(self.ListeningNodes)))
         for ch in self.__children.values():
             ch.print(i + 2)
 

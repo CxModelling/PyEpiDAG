@@ -243,7 +243,7 @@ class ParameterCore(Chromosome):
     def print(self):
         print('{} ({})'.format(self.Nickname, self))
 
-    def clone(self, copy_sc=False):
+    def clone(self, copy_sc=False, include_children=False):
         if self.Parent:
             raise AttributeError('This is not the root. Please clone from the root node')
         if copy_sc:
@@ -255,7 +255,8 @@ class ParameterCore(Chromosome):
         pc_new.LogLikelihood = self.LogLikelihood
         pc_new.LogPrior = self.LogPrior
 
-        self.__children_copy(pc_new)
+        if include_children:
+            self.__children_copy(pc_new)
 
         return pc_new
 
@@ -441,7 +442,7 @@ class PseudoParameterCore(ParameterCore):
     def print(self):
         print('{} ({})'.format(self.Nickname, self))
 
-    def clone(self, copy_sc=False):
+    def clone(self, copy_sc=False, include_children=False):
         if self.Parent:
             raise AttributeError('This is not the root. Please clone from the root node')
         if copy_sc:
@@ -452,7 +453,8 @@ class PseudoParameterCore(ParameterCore):
         pc_new = sg.generate(self.Nickname, dict(self))
         pc_new.LogPrior = self.LogPrior
 
-        self.__children_copy(pc_new)
+        if include_children:
+            self.__children_copy(pc_new)
 
         return pc_new
 

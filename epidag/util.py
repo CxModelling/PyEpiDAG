@@ -79,7 +79,7 @@ def resample(wts, hs, pars=None, log=True, new_size=None):
     new_size = max(new_size, 1) if new_size else size
 
     fin = [np.isfinite(wt) for wt in wts]
-    wts = [wt for wt, f in zip(wts, fin) if f]
+    wts = [float(wt) for wt, f in zip(wts, fin) if f]
     size = len(wts)
     if size is 0:
         if pars:

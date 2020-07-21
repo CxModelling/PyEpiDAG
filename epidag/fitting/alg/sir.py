@@ -1,37 +1,34 @@
 from epidag.util import resample
-from epidag.fitting.alg.fitter import BayesianFitter
+from epidag.fitting.alg.fitter import Fitter
 
 __author__ = 'TimeWz667'
 __all__ = ['SIR']
 
 
-class SIR(BayesianFitter):
-    def __init__(self, bm):
-        BayesianFitter.__init__(self, bm)
+class SIR(Fitter):
+    DefaultParameters = dict(Fitter.DefaultParameters)
+
+    def __init__(self, bm, **kwargs):
+        Fitter.__init__(self, bm, **kwargs)
         self.LogWts = None
 
     def initialise(self):
         self.Prior.clear()
         self.Posterior.clear()
 
-    def fit(self, niter, **kwargs):
-        self.info('Initialising')
-        self.Posterior.clear()
-        self.Prior.clear()
-        lis = list()
-        self.info('Sampling-Importance')
-        for _ in range(niter):
-            p = self.Model.sample_prior()
-            li = self.Model.evaluate_likelihood(p)
-            p.LogLikelihood = li
-            lis.append(li)
-            self.Prior.append(p)
+    def fit(self, **kwargs):
+        self.update_parameters(**kwargs)
 
-        self.LogWts = lis
+        self.info('Sampling')
+        self.initialise_prior(self['n_population'])
+
+        self.info('Calculating Importance')
+        self.LogWts = [p.LogLikelihood for p in self.Prior]
 
         self.info('Resampling')
-        self.Posterior, _ = resample(lis, self.Prior)
+        self.Posterior, _ = resample(self.LogWts, self.Prior)
 
-    def update(self, n_add, **kwargs):
-        n = n_add + len(self.Posterior)
+    def update(self, **kwargs):
+        self.update_parameters(**kwargs)
+        n = self['n_update'] + len(self.Posterior)
         self.Posterior, _ = resample(self.LogWts, self.Prior, new_size=n)

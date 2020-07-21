@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from .fitter import BayesianFitter
+from epidag.fitting.alg.fitter import Fitter
 import numpy as np
 
 __author__ = 'TimeWz667'
@@ -89,18 +89,15 @@ class IntegerStepper(AbsStepper):
         return np.round(np.random.normal(v, scale))
 
 
-class MCMC(BayesianFitter):
-    DefaultParameters = {
-        'burn': 1000,
-        'thin': 2
-    }
+class MCMC(Fitter):
+    DefaultParameters = dict(Fitter.DefaultParameters)
+    DefaultParameters['n_burn'] = 1000
+    DefaultParameters['n_thin'] = 2
 
-    def __init__(self, bm):
-        BayesianFitter.__init__(self, bm)
+    def __init__(self, bm, **kwargs):
+        Fitter.__init__(self, bm, **kwargs)
         self.Steppers = list()
         self.Last = None
-        self.BurnIn = MCMC.DefaultParameters['burn']
-        self.Thin = MCMC.DefaultParameters['thin']
 
         for d in self.Model.get_movable_nodes():
             loci, lo, up = d['Name'], d['Lower'], d['Upper']
@@ -111,22 +108,22 @@ class MCMC(BayesianFitter):
             elif d['Type'] is 'Binary':
                 self.Steppers.append(BinaryStepper(loci, lo, up))
 
-    def initialise(self):
+    def fit(self, **kwargs):
+        self.update_parameters(**kwargs)
+
+        burn, thin, n = self['n_burn'], self['n_thin'], self['n_population']
+
+        self.initialise_prior(10)
+
         self.Posterior.clear()
         self.Last = self.Model.sample_prior()
-        self.Last.LogLikelihood = self.Model.evaluate_likelihood(self.Last)
-
-    def fit(self, niter, **kwargs):
-        if 'burn' in kwargs:
-            self.BurnIn = kwargs['burn']
-        if 'thin' in kwargs:
-            self.Thin = kwargs['thin']
+        self.Model.evaluate_likelihood(self.Last)
 
         self.info('Initialising')
-        self.initialise()
+
         ns = 0
         self.info('Burning in')
-        while ns < self.BurnIn:
+        while ns < burn:
             for stp in self.Steppers:
                 ns += 1
                 self.Last = stp.step(self.Model, self.Last)
@@ -136,15 +133,14 @@ class MCMC(BayesianFitter):
             for stp in self.Steppers:
                 ns += 1
                 self.Last = stp.step(self.Model, self.Last)
-                if ns % self.Thin is 0:
+                if ns % thin is 0:
                     self.Posterior.append(self.Last)
-                if len(self.Posterior) >= niter:
-                    self.info('Completed')
+                if len(self.Posterior) >= n:
+                    self.info('Fitting Completed')
                     return
 
-    def update(self, n, **kwargs):
-        if 'thin' in kwargs:
-            self.Thin = kwargs['thin']
+    def update(self, **kwargs):
+        thin, n = self['n_thin'], self['n_update']
 
         self.info('Updating')
         ns = 0

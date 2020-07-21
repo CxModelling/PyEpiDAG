@@ -1,6 +1,6 @@
 import epidag as dag
-from .databm import *
-from .simubm import SimulationBayesianModel
+from epidag.fitting.databm import *
+from epidag.fitting.simubm import SimulationBayesianModel
 
 
 __author__ = 'TimeWz667'
