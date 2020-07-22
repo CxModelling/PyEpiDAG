@@ -146,9 +146,8 @@ class ParameterCore(Chromosome):
         """
         sel = self
         names = address.split('@')
-        if len(names) < 2:
-            return sel
-        for name in names[1:]:
+
+        for name in names:
             sel = sel.get_child(name)
         return sel
 

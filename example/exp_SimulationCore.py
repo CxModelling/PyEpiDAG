@@ -42,7 +42,7 @@ pc_taipei.breed('A1', 'agA', {'ageA': 5})
 pc_taipei.breed('A2', 'agA', {'ageA': 4})
 pc_taipei.breed('B1', 'agB')
 print(pc_taipei.list_actors())
-b2 = pc_taipei.breed('B2', 'agB')
+b2 = pc_taipei.breed('B2', 'agB', exo = {'sdB': 0.5})
 b2.get_sibling('B3')
 pc.deep_print()
 print(b2.list_actors())
@@ -62,4 +62,3 @@ pc.deep_print()
 
 pc_new = pc.clone(copy_sc=True)
 pc_new.deep_print()
-

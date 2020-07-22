@@ -24,8 +24,8 @@ class ParameterCoreCloneTest(unittest.TestCase):
         pc_b = pc_a.breed('B', 'b')
         pc_c = pc_b.breed('C', 'c')
 
-        pc_aa = pc_a.clone(copy_sc=True)
-        pc_cc = pc_aa.find_descendant('A@B@C')
+        pc_aa = pc_a.clone(copy_sc=True, include_children=True)
+        pc_cc = pc_aa.find_descendant('B@C')
 
         self.assertEqual(pc_c['z'], 3)
         self.assertEqual(pc_cc['z'], 3)

@@ -42,10 +42,15 @@ class SimulationGroup:
         for d in self.Fixed:
             loci = self.BN[d]
             if d not in vs:
-                loci.fill(vs)
-            prior += loci.evaluate(vs)
+                try:
+                    loci.fill(vs)
+                except KeyError:
+                    pass
 
-        vs = {d: vs[d] for d in self.Fixed}
+            if d in vs:
+                prior += loci.evaluate(vs)
+
+        vs = {k: v for k, v in vs.items() if k in self.Fixed}
         vs.update(exo)
 
         pc = ParameterCore(nickname, self, vs, prior)

@@ -34,7 +34,7 @@ class ParameterCoreCloneTest(unittest.TestCase):
         ns = dag.NodeSet('Root', as_floating=['p'])
         sc = dag.as_simulation_core(bn, ns)
         pc = sc.generate("T2", {'n': 10})
-        self.assertListEqual(list(pc.get_samplers().keys()), ['p'])
+        self.assertSetEqual(set(pc.get_samplers().keys()), {'x', 'p'})
 
     def test_no_exo(self):
         bn = dag.bayes_net_from_script(script_betabin)

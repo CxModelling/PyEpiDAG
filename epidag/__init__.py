@@ -1,6 +1,6 @@
 from epidag.util import add_math_func, add_data_func
 from epidag.distribution import parse_distribution
-from epidag.monitor import Monitor
+#from epidag.monitor import Monitor
 from epidag.bayesnet import bayes_net_from_script, bayes_net_from_json
 
 from epidag.fn import *
