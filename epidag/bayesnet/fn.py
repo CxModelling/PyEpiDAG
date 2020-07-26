@@ -7,9 +7,6 @@ __author__ = 'TimeWz667'
 __all__ = []
 
 
-
-
-
 class NodeGroup:
     def __init__(self, name, fixed):
         self.Name = name

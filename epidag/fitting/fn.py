@@ -1,37 +1,27 @@
+import numpy as np
 import epidag as dag
-from epidag.fitting.databm import *
-from epidag.fitting.simubm import SimulationBayesianModel
+from epidag.fitting.res import Result
+
 
 
 __author__ = 'TimeWz667'
-__all__ = ['as_data_model', 'as_simulation_data_model']
+__all__ = ['sample_prior']
 
 
-def as_data_model(bn, data, exo=None, latent=None, datum_name='entries'):
-    data_reformed = as_bayesian_model_frame(data, exo=exo, datum_name=datum_name)
-    data_shadow = get_data_shadow(data_reformed, bn)
-    data_hie = get_data_hierarchy(data_shadow, bn, latent=latent)
+def sample_prior(model, n: int = 1000, max_drop: int = 1000):
+    prior = []
 
-    ng = dag.form_hierarchy(bn, data_hie)
+    n_drop = 0
 
-    root_nodes = bn.sort(ng.Nodes)
-    # leaf_nodes = bn.sort(list(ng.Children)[0].Nodes)
-
-    leaves = list()
-
-    for datum, nodes in zip(data_reformed['entries'], data_shadow['entries']):
-        min_nodes = dag.get_minimal_nodes(bn.DAG, nodes, root_nodes)
-        diff = min_nodes - datum.keys()
-
-        if any(bn.is_rv(d) for d in diff):
-            need_mc = True
+    while len(prior) < n:
+        p = model.sample_prior()
+        li = model.evaluate_likelihood(p)
+        if np.isfinite(li):
+            prior.append(p)
         else:
-            need_mc = False
-        min_nodes = bn.sort(min_nodes)
-        leaves.append(DataNodeSet(datum, min_nodes, need_mc))
+            n_drop += 1
 
-    return DataBayesianModel(bn, root_nodes, leaves)
+        if n_drop >= max_drop:
+            raise AttributeError('Parameter space might not well-defined')
 
-
-def as_simulation_data_model(sm, data, sim_fn, mea_fun, exact_like=False):
-    return SimulationBayesianModel(sm, data, sim_fn, mea_fun, exact_like)
+    return Result(nodes = prior, model = model)

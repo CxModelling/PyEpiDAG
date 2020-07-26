@@ -1,3 +1,4 @@
+from epidag.fitting import BayesResult
 from epidag.fitting.alg.fitter import Fitter
 import numpy as np
 
@@ -6,48 +7,50 @@ __all__ = ['ABC']
 
 
 class ABC(Fitter):
-    DefaultParameters = dict(Fitter.DefaultParameters)
-    DefaultParameters['n_test'] = 100
-    DefaultParameters['p_test'] = 0.15
-    DefaultParameters['pr_drop'] = 0.1
-    DefaultParameters['n_update'] = 100
+    def __init__(self, name_logger="ABC", n_test=100, p_test=0.1):
+        Fitter.__init__(self, name_logger, n_test = n_test, p_test=p_test)
 
-    def __init__(self, bm, **kwargs):
-        Fitter.__init__(self, bm, **kwargs)
-        self.Eps = None
-
-    def fit(self, **kwargs):
-        self.update_parameters(**kwargs)
+    def fit(self, model, **kwargs):
+        n_post = kwargs['n_post']
+        n_test = self.Parameters['n_test']
+        p_test = self.Parameters['p_test']
 
         self.info('Testing threshold')
 
-        self.initialise_prior(self['n_test'])
+        tests = list()
 
-        tests = [p.LogLikelihood for p in self.Prior]
-        self.Eps = np.percentile(tests, (1-self['p_test'])*100)
+        while len(tests) < n_test:
+            p = model.sample_prior()
+            li = model.evaluate_likelihood(p)
+            if np.isfinite(li):
+                tests.append(li)
 
-        self.Posterior.clear()
+        eps = np.percentile(tests, (1 - p_test) * 100)
+
+        self.info('Detected epsilon = {:.4g}'.format(eps))
+
 
         self.info('Collecting posterior parameters')
+        post = list()
+        while len(post) < n_post:
+            p = model.sample_prior()
+            li = model.evaluate_likelihood(p)
+            if li < eps:
+                continue
+            p.LogLikelihood = li
+            post.append(p)
 
-        n = self['n_population']
-        while len(self.Posterior) < n:
-            self.add_a_posterior()
-        self.info('Fitting completed')
+        self.info('Completed')
 
-    def update(self, **kwargs):
-        self.update_parameters(**kwargs)
-        self.info('Updating')
-        n_target = len(self.Posterior) + self['n_update']
+        res = BayesResult(nodes=post, model=model, alg=self)
+        res.Benchmarks['Eps'] = eps
+        res.Benchmarks['ESS'] = n_post
+        res.Benchmarks['Niter'] = n_post
+        res.Benchmarks['p_test'] = p_test
+        return res
 
-        while len(self.Posterior) < n_target:
-            self.add_a_posterior()
-        self.info('Update completed with {:d} posterior parameters'.format(len(self.Posterior)))
+    def is_updatable(self):
+        return True
 
-    def add_a_posterior(self):
-        p = self.Model.sample_prior()
-        li = self.Model.evaluate_likelihood(p)
-        if li < self.Eps:
-            return
-        p.LogLikelihood = li
-        self.Posterior.append(p)
+    def update(self, res, **kwargs):
+        pass

@@ -1,15 +1,46 @@
 from abc import ABCMeta, abstractmethod
 import numpy as np
 from scipy.special import logsumexp
-from epidag import Monitor
+from epidag.monitor import Monitor
 from epidag.fitting import BayesianModel
 from epidag.bayesnet import Chromosome
 
-
 __author__ = 'TimeWz667'
+__all__ = ['Fitter']
 
 
 class Fitter(metaclass=ABCMeta):
+    def __init__(self, name_logger, **kwargs):
+        self.Monitor = Monitor(name_logger)
+        self.Parameters = dict(kwargs)
+
+    def needs_exact_likelihood(self):
+        return False
+
+    def is_updatable(self):
+        return False
+
+    def set_log_path(self, filename):
+        self.Monitor.set_log_path(filename=filename)
+
+    def info(self, msg):
+        self.Monitor.info(msg)
+
+    def error(self, msg):
+        self.Monitor.info(msg)
+
+    @abstractmethod
+    def fit(self, model: BayesianModel, **kwargs):
+        pass
+
+    def update(self, res, **kwargs):
+        if not self.is_updatable():
+            raise AttributeError('No update scheme available')
+
+
+
+
+class Fitter1(metaclass=ABCMeta):
     DefaultParameters = {
         'n_population': 1000,
         'm_prior_drop': 10,
@@ -34,14 +65,7 @@ class Fitter(metaclass=ABCMeta):
     def renew_parameters(self):
         self.Parameters = dict(self.DefaultParameters)
 
-    def set_log_path(self, filename):
-        self.Monitor.set_log_path(filename=filename)
 
-    def info(self, msg):
-        self.Monitor.info(msg)
-
-    def error(self, msg):
-        self.Monitor.info(msg)
 
     def initialise_prior(self, n: int=0):
         self.Prior.clear()
@@ -92,16 +116,10 @@ class Fitter(metaclass=ABCMeta):
         df = self.posterior_to_df()
         df.to_csv(file)
 
-    @abstractmethod
-    def fit(self, **kwargs):
-        pass
-
-    def update(self, **kwargs):
-        raise AttributeError('The algorithm does not support update scheme')
 
 
 class EvolutionaryFitter(Fitter, metaclass=ABCMeta):
-    DefaultParameters = dict(Fitter.DefaultParameters)
+    DefaultParameters = dict()
     DefaultParameters['max_generation'] = 30
     DefaultParameters['n_update'] = 10
 

@@ -57,7 +57,7 @@ class PriorNodeSet:
     def sample_prior(self, bn):
         vs = dag.sample_minimally(bn, included=self.Nodes, sources=False)
         prior = dag.evaluate_nodes(bn, vs)
-        return dag.Chromosome(vs, prior)
+        return dag.bayesnet.Chromosome(vs, prior)
 
     def evaluate_prior(self, bn, gene):
         vs = {k: v for k, v in gene if k in self.Nodes}
@@ -114,8 +114,9 @@ class DataBayesianModel(BayesianModel):
         self.Root = PriorNodeSet(root_nodes)
         self.DataEntries = entries
 
-    def get_movable_nodes(self):
-        mn = BayesianModel.get_movable_nodes(self)
+    @property
+    def MovableNodes(self):
+        mn = BayesianModel.MovableNodes
         mn = [n for n in mn if n['Name'] in self.Root.Nodes]
         return mn
 

@@ -11,5 +11,5 @@ from epidag.simulation import NodeSet
 import epidag.factory
 import epidag.data
 import epidag.causality
-#import epidag.fitting
+import epidag.fitting
 __author__ = 'TimeWz667'
