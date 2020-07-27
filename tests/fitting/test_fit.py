@@ -10,6 +10,7 @@ PCore test {
 }
 '''
 
+
 class BinBeta(dag.fitting.BayesianModel):
     def __init__(self, bn, data):
         dag.fitting.BayesianModel.__init__(self, bn, pars=['prob'])
@@ -53,11 +54,18 @@ class FittingTest(unittest.TestCase):
         print(res.summarise())
         print(res.Benchmarks)
 
-
     def test_abc(self):
         print()
         alg = dag.fitting.ABC()
         res = alg.fit(self.DM, n_post=1000)
+
+        print(res.summarise())
+        print(res.Benchmarks)
+
+    def test_abcsmc(self):
+        print()
+        alg = dag.fitting.ABCSMC()
+        res = alg.fit(self.DM, n_post=100, max_round=20)
 
         print(res.summarise())
         print(res.Benchmarks)

@@ -2,6 +2,7 @@
 from epidag.fitting.alg.sir import SIR
 from epidag.fitting.alg.abc import ABC
 #from epidag.fitting.alg.ga import GA
+from epidag.fitting.alg.abcsmc import ABCSMC
 from epidag.fitting.alg.fitter import Fitter
 
 __author__ = 'TimeWz667'
